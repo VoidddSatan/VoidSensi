@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Void Satan Sensi</title>
+<style>
+  :root{
+    --bg:#040404;
+    --ink:#f3f3f4;
+    --ink-dim:rgba(243,243,244,0.58);
+    --ink-faint:rgba(243,243,244,0.34);
+    --red:#e0303a;
+    --red-glow:rgba(224,48,58,0.16);
+    --glass:rgba(255,255,255,0.045);
+    --border:rgba(255,255,255,0.09);
+    --border-red:rgba(224,48,58,0.32);
+    --mono:'SF Mono',ui-monospace,'Cascadia Code','Roboto Mono',monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    min-height:100vh; overflow-x:hidden; position:relative;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(224,48,58,0.07), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 20%, rgba(255,255,255,0.035), transparent 55%),
+      radial-gradient(ellipse 800px 600px at 50% 110%, rgba(224,48,58,0.05), transparent 60%);
+  }
+  #orbField{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .orb{ position:absolute; border-radius:50%; filter:blur(6px); background:rgba(255,255,255,0.10); animation:drift linear infinite; opacity:0.5; }
+  .orb.red{ background:rgba(224,48,58,0.18); box-shadow:0 0 18px rgba(224,48,58,0.25); }
+  @keyframes drift{ 0%{transform:translate3d(0,0,0);} 50%{transform:translate3d(var(--dx,20px),var(--dy,-30px),0);} 100%{transform:translate3d(0,0,0);} }
+  @media (prefers-reduced-motion:reduce){ .orb{animation:none;} *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
+
+  .screen{ position:relative; z-index:1; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px 48px; }
+  .glass{ background:var(--glass); backdrop-filter:blur(22px) saturate(140%); -webkit-backdrop-filter:blur(22px) saturate(140%); border:1px solid var(--border); border-radius:20px; box-shadow:0 20px 60px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05); }
+
+  .login-card{ width:100%; max-width:360px; padding:36px 28px 30px; text-align:center; }
+  .brand-mark{ width:56px;height:56px;margin:0 auto 18px; border-radius:16px; background:linear-gradient(145deg, rgba(224,48,58,0.35), rgba(224,48,58,0.05)); border:1px solid var(--border-red); display:flex;align-items:center;justify-content:center; font-family:var(--mono); font-weight:700; font-size:20px; color:var(--red); box-shadow:0 0 30px -4px var(--red-glow); }
+  .login-card h1{ font-size:17px; letter-spacing:0.02em; margin:0 0 4px; font-weight:600; }
+  .login-card p.sub{ color:var(--ink-faint); font-size:12.5px; margin:0 0 26px; }
+  .field{ text-align:left; margin-bottom:14px; }
+  .field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint); margin-bottom:6px; }
+  .field input{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,0.03); color:var(--ink); font-size:15px; font-family:var(--mono); outline:none; transition:border-color .2s, background .2s; }
+  .field input:focus{ border-color:var(--border-red); background:rgba(255,255,255,0.05); }
+  .btn{ width:100%; padding:13px; border-radius:12px; border:1px solid var(--border-red); background:linear-gradient(180deg, rgba(224,48,58,0.22), rgba(224,48,58,0.08)); color:var(--ink); font-size:14px; font-weight:600; letter-spacing:0.03em; cursor:pointer; margin-top:6px; transition:transform .15s, box-shadow .15s, background .2s; }
+  .btn:active{ transform:scale(0.97); }
+  .btn:hover{ background:linear-gradient(180deg, rgba(224,48,58,0.32), rgba(224,48,58,0.12)); box-shadow:0 8px 24px -8px var(--red-glow); }
+  .btn.ghost{ background:rgba(255,255,255,0.03); border-color:var(--border); }
+  .btn.ghost:hover{ background:rgba(255,255,255,0.06); }
+  .login-err{ color:var(--red); font-size:12px; margin-top:12px; min-height:14px; }
+
+  #appScreen{ display:none; flex-direction:column; align-items:center; padding-top:36px; }
+  .wrap{ width:100%; max-width:480px; display:flex; flex-direction:column; gap:16px; }
+  .top-bar{ display:flex; align-items:center; justify-content:space-between; padding:0 4px 4px; }
+  .top-bar .title{ font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-faint); font-family:var(--mono); }
+  .top-bar .logout{ font-size:11px; color:var(--ink-faint); background:none; border:none; cursor:pointer; text-decoration:underline; }
+  h1.app-title{ font-size:20px; margin:0 0 2px; font-weight:700; letter-spacing:-0.01em; }
+  h1.app-title span{ color:var(--red); }
+  p.app-sub{ margin:0; color:var(--ink-faint); font-size:12.5px; }
+
+  /* Sensitivity level selector */
+  .level-card{ padding:16px 16px 14px; }
+  .level-title{ font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-faint); margin-bottom:10px; }
+  .level-row{ display:flex; gap:8px; }
+  .level-btn{ flex:1; padding:10px 4px; border-radius:11px; border:1px solid var(--border); background:rgba(255,255,255,0.03); color:var(--ink-dim); font-size:12.5px; font-weight:600; cursor:pointer; text-align:center; transition:all .2s; }
+  .level-btn.active{ border-color:var(--border-red); color:var(--ink); background:linear-gradient(180deg, rgba(224,48,58,0.24), rgba(224,48,58,0.06)); box-shadow:0 6px 18px -8px var(--red-glow); }
+  .level-hint{ font-size:10.5px; color:var(--ink-faint); margin-top:9px; text-align:center; }
+
+  .process-card{ padding:26px 22px; }
+  .process-step{ display:flex; align-items:center; gap:12px; padding:9px 0; font-size:13.5px; color:var(--ink-faint); opacity:0.3; transition:opacity .3s; }
+  .process-step.active{ opacity:1; color:var(--ink); }
+  .process-step.done{ opacity:0.55; color:var(--ink-dim); }
+  .step-dot{ width:8px; height:8px; border-radius:50%; background:var(--ink-faint); flex-shrink:0; transition:background .3s, box-shadow .3s; }
+  .process-step.active .step-dot{ background:var(--red); box-shadow:0 0 10px 2px var(--red-glow); animation:pulse 1s infinite; }
+  .process-step.done .step-dot{ background:rgba(255,255,255,0.35); }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .progress-track{ height:3px; border-radius:3px; background:rgba(255,255,255,0.06); margin-top:18px; overflow:hidden; }
+  .progress-fill{ height:100%; background:linear-gradient(90deg, var(--red), #ff6a5a); width:0%; transition:width .35s ease; }
+
+  .result-head{ padding:22px 22px 20px; text-align:center; }
+  .ring-wrap{ width:92px; height:92px; margin:0 auto 12px; position:relative; }
+  .ring-label{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring-label b{ font-family:var(--mono); font-size:18px; }
+  .ring-label span{ font-size:9px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.06em; }
+  .device-name{ font-size:16px; font-weight:700; margin:2px 0 2px; }
+  .device-meta{ font-size:11.5px; color:var(--ink-faint); font-family:var(--mono); line-height:1.6; }
+  .profile-chip{ display:inline-block; margin-top:12px; padding:4px 12px; border-radius:20px; border:1px solid var(--border-red); font-family:var(--mono); font-size:11px; color:var(--red); background:rgba(224,48,58,0.08); }
+
+  .section-card{ padding:18px 18px 16px; }
+  .section-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .section-title h2{ font-size:12.5px; text-transform:uppercase; letter-spacing:0.1em; margin:0; color:var(--ink); font-weight:700; }
+  .section-title h2 i{ color:var(--red); font-style:normal; }
+  .section-path{ font-size:10.5px; color:var(--ink-faint); font-family:var(--mono); margin-bottom:10px; line-height:1.6; }
+
+  .stat-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 4px; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .stat-row:last-of-type{ border-bottom:none; }
+  .stat-left{ display:flex; flex-direction:column; }
+  .stat-name{ font-size:13px; color:var(--ink); font-weight:500; }
+  .stat-hint{ font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+  .stat-right{ display:flex; align-items:center; gap:10px; }
+  .stat-value{ font-family:var(--mono); font-size:17px; font-weight:700; color:var(--red); min-width:38px; text-align:right; }
+  .copy-btn{ width:30px; height:30px; border-radius:9px; border:1px solid var(--border); background:rgba(255,255,255,0.03); color:var(--ink-dim); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s, border-color .2s, transform .12s; }
+  .copy-btn:active{ transform:scale(0.9); }
+  .copy-btn.copied{ border-color:var(--border-red); color:var(--red); }
+
+  .ios-row{ padding:10px 4px; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .ios-row:last-child{ border-bottom:none; }
+  .ios-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .ios-name{ font-size:12.5px; font-weight:600; }
+  .ios-badge{ font-family:var(--mono); font-size:10.5px; padding:2px 9px; border-radius:20px; border:1px solid var(--border); color:var(--ink-dim); white-space:nowrap; flex-shrink:0; }
+  .ios-badge.on{ border-color:var(--border-red); color:var(--red); background:rgba(224,48,58,0.07); }
+  .ios-val{ font-family:var(--mono); font-size:12.5px; color:var(--ink); margin-top:4px; }
+  .ios-na{ font-size:11px; color:var(--ink-faint); font-style:italic; margin-top:3px; }
+
+  /* Visual reference slider (mirrors the iOS "barrita") */
+  .ref-slider-wrap{ margin-top:10px; }
+  .ref-slider{ width:100%; height:22px; -webkit-appearance:none; appearance:none; background:transparent; margin:0; display:block; }
+  .ref-slider::-webkit-slider-runnable-track{ height:4px; border-radius:4px; background:rgba(255,255,255,0.12); }
+  .ref-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:var(--red); box-shadow:0 0 10px 1px var(--red-glow); margin-top:-7px; border:2px solid rgba(255,255,255,0.85); }
+  .ref-slider::-moz-range-track{ height:4px; border-radius:4px; background:rgba(255,255,255,0.12); }
+  .ref-slider::-moz-range-thumb{ width:16px; height:16px; border-radius:50%; background:var(--red); border:2px solid rgba(255,255,255,0.85); box-shadow:0 0 10px 1px var(--red-glow); }
+  .ref-slider:disabled{ opacity:1; cursor:default; }
+  .ref-slider-labels{ display:flex; justify-content:space-between; font-size:9.5px; color:var(--ink-faint); font-family:var(--mono); margin-top:3px; }
+  .ref-slider-labels span.mark{ position:relative; }
+  .ref-slider-pos{ font-size:10.5px; color:var(--ink-dim); margin-top:7px; line-height:1.5; }
+  .ref-slider-pos b{ color:var(--ink); }
+
+  /* Visual stepper (mirrors the iOS "-  n  +" row, e.g. Bucles) */
+  .stepper-visual{ display:flex; align-items:center; gap:0; border:1px solid var(--border); border-radius:9px; overflow:hidden; flex-shrink:0; }
+  .stepper-btn{ width:26px; height:26px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.03); color:var(--ink-dim); font-size:15px; font-family:var(--mono); }
+  .stepper-val{ min-width:30px; text-align:center; font-family:var(--mono); font-size:12.5px; font-weight:700; color:var(--red); border-left:1px solid var(--border); border-right:1px solid var(--border); padding:0 4px; height:26px; display:flex; align-items:center; justify-content:center; }
+
+  .link-note{ font-size:11.5px; color:var(--ink-faint); line-height:1.6; padding:12px 4px 2px; border-top:1px dashed rgba(255,255,255,0.08); margin-top:6px; }
+  .link-note b{ color:var(--red); font-weight:600; }
+  .info-note{ font-size:11px; color:var(--ink-faint); line-height:1.6; background:rgba(255,255,255,0.02); border:1px dashed var(--border); border-radius:12px; padding:10px 12px; margin-top:2px; }
+
+  .actions-row{ display:flex; gap:10px; }
+  .actions-row .btn{ margin-top:0; }
+
+  .explain-card{ padding:18px 18px 20px; font-size:12.5px; line-height:1.7; color:var(--ink-dim); }
+  .explain-card h2{ font-size:12.5px; text-transform:uppercase; letter-spacing:0.1em; margin:0 0 10px; color:var(--ink); }
+  .explain-card ol{ margin:0; padding-left:18px; }
+  .explain-card li{ margin-bottom:9px; }
+  .explain-card li b{ color:var(--ink); }
+
+  footer.app-footer{ text-align:center; color:var(--ink-faint); font-size:10.5px; padding:8px 0 30px; }
+  .hidden{ display:none !important; }
+
+  .toast{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); z-index:50; background:rgba(20,20,20,0.92); border:1px solid var(--border-red); color:var(--ink); padding:10px 18px; border-radius:12px; font-size:12.5px; opacity:0; transition:opacity .25s, transform .25s; backdrop-filter:blur(10px); pointer-events:none; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:380px){ .wrap{ max-width:100%; } .stat-value{ font-size:15px; } }
+</style>
+</head>
+<body>
+
+<div id="orbField"></div>
+
+<!-- ==================== LOGIN ==================== -->
+<div class="screen" id="loginScreen">
+  <div class="glass login-card">
+    <div class="brand-mark">VS</div>
+    <h1>VOID SATAN SENSI</h1>
+    <p class="sub">Acceso restringido &middot; calibrador de sensibilidad</p>
+    <form id="loginForm" autocomplete="off">
+      <div class="field">
+        <label for="user">Usuario</label>
+        <input id="user" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="usuario">
+      </div>
+      <div class="field">
+        <label for="pass">Contraseña</label>
+        <input id="pass" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn" type="submit">Entrar</button>
+      <div class="login-err" id="loginErr"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== APP ==================== -->
+<div class="screen" id="appScreen">
+  <div class="wrap">
+    <div class="top-bar">
+      <span class="title">Void Satan Sensi v2</span>
+      <button class="logout" id="logoutBtn">Cerrar sesión</button>
+    </div>
+
+    <div>
+      <h1 class="app-title">VOID SATAN <span>SENSI</span></h1>
+      <p class="app-sub">Detección real del dispositivo + guía exacta de Ajustes de iOS</p>
+    </div>
+
+    <!-- Sensitivity level selector -->
+    <div class="glass level-card">
+      <div class="level-title">Nivel de sensibilidad objetivo</div>
+      <div class="level-row" id="levelRow">
+        <button class="level-btn" data-level="baja">BAJA</button>
+        <button class="level-btn active" data-level="media">MEDIA</button>
+        <button class="level-btn" data-level="alta">ALTA</button>
+      </div>
+      <div class="level-hint" id="levelHint">Media: equilibrio entre control y velocidad de giro</div>
+    </div>
+
+    <!-- Calibration process -->
+    <div class="glass process-card" id="processCard">
+      <div class="process-step" data-step="1"><span class="step-dot"></span><span>Detectando dispositivo…</span></div>
+      <div class="process-step" data-step="2"><span class="step-dot"></span><span>Analizando pantalla…</span></div>
+      <div class="process-step" data-step="3"><span class="step-dot"></span><span>Analizando densidad de píxeles (DPR)…</span></div>
+      <div class="process-step" data-step="4"><span class="step-dot"></span><span>Midiendo frecuencia de refresco…</span></div>
+      <div class="process-step" data-step="5"><span class="step-dot"></span><span>Calculando perfil táctil…</span></div>
+      <div class="process-step" data-step="6"><span class="step-dot"></span><span>Generando sensibilidad Free Fire…</span></div>
+      <div class="process-step" data-step="7"><span class="step-dot"></span><span>Generando configuración iOS…</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden" style="display:flex; flex-direction:column; gap:16px;">
+
+      <div class="glass result-head">
+        <div class="ring-wrap">
+          <svg width="92" height="92" viewBox="0 0 92 92">
+            <circle cx="46" cy="46" r="40" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="6"/>
+            <circle id="confCircle" cx="46" cy="46" r="40" fill="none" stroke="#e0303a" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 46 46)"/>
+          </svg>
+          <div class="ring-label"><b id="confPct">–</b><span>confianza</span></div>
+        </div>
+        <div class="device-name" id="deviceName">—</div>
+        <div class="device-meta" id="deviceMeta">—</div>
+        <div class="profile-chip" id="profileChip">PERFIL #01</div>
+      </div>
+
+      <div class="glass section-card">
+        <div class="section-title"><h2><i>●</i> Free Fire — Sensibilidad</h2></div>
+        <div id="ffList"></div>
+      </div>
+
+      <!-- Tocar (main) -->
+      <div class="glass section-card">
+        <div class="section-title"><h2><i>●</i> Ajustes → Accesibilidad → Tocar</h2></div>
+        <div class="section-path">Configuración → Accesibilidad → Tocar</div>
+        <div id="touchMainList"></div>
+      </div>
+
+      <!-- Reacción táctil -->
+      <div class="glass section-card">
+        <div class="section-title"><h2><i>●</i> Reacción táctil</h2></div>
+        <div class="section-path">Tocar → Reacción táctil → Duración requerida</div>
+        <div id="hapticList"></div>
+      </div>
+
+      <!-- Adaptaciones táctiles -->
+      <div class="glass section-card">
+        <div class="section-title"><h2><i>●</i> Adaptaciones táctiles</h2></div>
+        <div class="section-path">Tocar → Adaptaciones táctiles</div>
+        <div id="accomList"></div>
+      </div>
+
+      <!-- AssistiveTouch -->
+      <div class="glass section-card">
+        <div class="section-title"><h2><i>●</i> AssistiveTouch</h2></div>
+        <div class="section-path">Tocar → AssistiveTouch</div>
+        <div id="atList"></div>
+      </div>
+
+      <!-- Control por botón -->
+      <div class="glass section-card">
+        <div class="section-title"><h2><i>●</i> Control por botón</h2></div>
+        <div class="section-path">Configuración → Accesibilidad → Control por botón</div>
+        <div id="switchList"></div>
+      </div>
+
+      <div class="glass section-card">
+        <div class="link-note" style="border-top:none; padding-top:0;">
+          <b>Nota:</b> la configuración de iOS <b>complementa</b> la sensibilidad de Free Fire, no la sustituye. Free Fire controla la sensibilidad interna del juego; iOS controla cómo el sistema interpreta tus toques antes de que lleguen al juego. Mantén ambas coherentes y ajústalas juntas.
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn" id="copyAllBtn" style="flex:1;">Copiar toda la configuración</button>
+      </div>
+      <button class="btn ghost" id="recalBtn">↻ RECALIBRAR</button>
+
+      <div class="glass explain-card">
+        <h2>Cómo funciona</h2>
+        <ol>
+          <li><b>Datos usados:</b> resolución lógica y física, devicePixelRatio, viewport visual, orientación, maxTouchPoints, user agent/platform, modo standalone y frecuencia de refresco medida en vivo con requestAnimationFrame. Nada se inventa: lo que Safari no expone se marca como no disponible.</li>
+          <li><b>Modelo de iPhone:</b> se compara la resolución lógica contra una tabla de resoluciones conocidas. Si coincide bien, se muestra el modelo probable; si no, "Modelo estimado" con confianza más baja.</li>
+          <li><b>Nivel de sensibilidad (Baja/Media/Alta):</b> tú eliges el objetivo. Cada nivel tiene un rango base propio para cada categoría de Free Fire, y ese rango se ajusta con el "device score" (pantalla, DPR, refresco, touch points) mediante una fórmula reproducible.</li>
+          <li><b>Qué cambia al pulsar RECALIBRAR o cambiar de nivel:</b> se vuelve a detectar el dispositivo y a medir el refresh rate en tiempo real, y se aplica una variación pequeña y controlada (patrón fijo ligado al número de calibración, no Math.random) alrededor del valor base de ese nivel.</li>
+          <li><b>Ajustes de iOS:</b> solo los que existen realmente, organizados exactamente como aparecen en Ajustes → Accesibilidad: Tocar → Reacción táctil; Adaptaciones táctiles (duración de presión, movimiento requerido del gesto de deslizamiento, ignorar repetición, ayuda táctil); AssistiveTouch (opacidad, gestos táctiles, sensibilidad de seguimiento y Teclas del mouse — con o sin mouse/teclado conectado —, control de permanencia, tolerancia al movimiento, gestos en el borde); y Control por botón (duración de exploración, bucles/ciclos, y dentro de Cursor deslizante: estilo y cantidad), aunque este último se recomienda dejar desactivado para jugar.</li>
+          <li><b>Barritas y steppers:</b> los ajustes que en Ajustes de iOS se controlan arrastrando una barra deslizante se muestran aquí con esa misma barra, ya posicionada en el punto exacto que debes replicar — nunca como un número suelto para teclear. Los que en iOS se ajustan con "− +" (como Bucles) se muestran igual, como un contador.</li>
+          <li><b>Limitación honesta:</b> esta página no puede modificar Free Fire ni iOS automáticamente, ni activar Accesibilidad por ti. Solo calcula los valores y te dice exactamente en qué pantalla y en qué campo escribirlos.</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer class="app-footer">Void Satan Sensi · calibrador local, sin conexión a servidores</footer>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ================= Orb field ================= */
+  function buildOrbs(){
+    var field = document.getElementById('orbField');
+    var count = reducedMotion ? 0 : 14;
+    for(var i=0;i<count;i++){
+      var o = document.createElement('div');
+      var isRed = Math.random() < 0.28;
+      o.className = 'orb' + (isRed ? ' red' : '');
+      var size = 20 + Math.random()*46;
+      o.style.width = size+'px';
+      o.style.height = size+'px';
+      o.style.left = (Math.random()*100)+'vw';
+      o.style.top = (Math.random()*100)+'vh';
+      o.style.setProperty('--dx', (Math.random()*60-30)+'px');
+      o.style.setProperty('--dy', (Math.random()*80-40)+'px');
+      o.style.animationDuration = (14 + Math.random()*16)+'s';
+      o.style.animationDelay = (Math.random()*-20)+'s';
+      o.style.opacity = (0.25 + Math.random()*0.35).toFixed(2);
+      field.appendChild(o);
+    }
+  }
+  buildOrbs();
+
+  /* ================= Login ================= */
+  var LOGIN_USER = 'void';
+  var LOGIN_PASS = '5630';
+  var loginForm = document.getElementById('loginForm');
+  var loginScreen = document.getElementById('loginScreen');
+  var appScreen = document.getElementById('appScreen');
+  var loginErr = document.getElementById('loginErr');
+
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var u = document.getElementById('user').value.trim();
+    var p = document.getElementById('pass').value.trim();
+    if(u === LOGIN_USER && p === LOGIN_PASS){
+      loginErr.textContent = '';
+      loginScreen.style.display = 'none';
+      appScreen.style.display = 'flex';
+      startCalibration();
+    } else {
+      loginErr.textContent = 'Usuario o contraseña incorrectos.';
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', function(){
+    appScreen.style.display = 'none';
+    loginScreen.style.display = 'flex';
+    document.getElementById('pass').value = '';
+    document.getElementById('results').classList.add('hidden');
+    resetProcessUI();
+  });
+
+  /* ================= Utility ================= */
+  function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  function copyText(text, btnEl){
+    function done(ok){
+      if(!btnEl) return;
+      btnEl.classList.toggle('copied', ok);
+      var prev = btnEl.textContent;
+      btnEl.textContent = ok ? '✓' : prev;
+      setTimeout(function(){ btnEl.textContent = prev; btnEl.classList.remove('copied'); }, 1100);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){done(true); toast('Copiado');}).catch(function(){done(false);});
+    } else {
+      try{
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        done(true); toast('Copiado');
+      }catch(e){ done(false); toast('No se pudo copiar'); }
+    }
+  }
+
+  /* ================= Sensitivity level selector ================= */
+  var targetLevel = 'media';
+  var LEVEL_HINTS = {
+    baja: 'Baja: giros más lentos y controlados, ideal para precisión con francotirador',
+    media: 'Media: equilibrio entre control y velocidad de giro',
+    alta: 'Alta: giros rápidos, ideal para combate cercano y reacción'
+  };
+  var levelBtns = Array.prototype.slice.call(document.querySelectorAll('.level-btn'));
+  levelBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var lvl = btn.getAttribute('data-level');
+      if(lvl === targetLevel) return;
+      targetLevel = lvl;
+      levelBtns.forEach(function(b){ b.classList.toggle('active', b === btn); });
+      document.getElementById('levelHint').textContent = LEVEL_HINTS[lvl];
+      calibrationIteration++;
+      startCalibration();
+    });
+  });
+
+  /* ================= Known iPhone logical resolutions ================= */
+  var KNOWN_DEVICES = [
+    {w:320,h:480,dpr:2,name:'iPhone 4 / 4s'},
+    {w:320,h:568,dpr:2,name:'iPhone 5 / 5s / SE (1.ª gen)'},
+    {w:375,h:667,dpr:2,name:'iPhone 6/6s/7/8 · SE (2.ª/3.ª gen)'},
+    {w:414,h:736,dpr:3,name:'iPhone 6+/6s+/7+/8+'},
+    {w:375,h:812,dpr:3,name:'iPhone X/XS/11 Pro · 12 mini/13 mini'},
+    {w:414,h:896,dpr:2,name:'iPhone XR / 11'},
+    {w:414,h:896,dpr:3,name:'iPhone XS Max / 11 Pro Max'},
+    {w:390,h:844,dpr:3,name:'iPhone 12/12 Pro · 13/13 Pro · 14'},
+    {w:428,h:926,dpr:3,name:'iPhone 12 Pro Max · 13 Pro Max · 14 Plus'},
+    {w:393,h:852,dpr:3,name:'iPhone 14 Pro · 15/15 Pro · 16'},
+    {w:430,h:932,dpr:3,name:'iPhone 14 Pro Max · 15 Plus/15 Pro Max · 16 Plus'},
+    {w:402,h:874,dpr:3,name:'iPhone 16 Pro'},
+    {w:440,h:956,dpr:3,name:'iPhone 16 Pro Max'}
+  ];
+
+  function matchDevice(w,h,dpr){
+    var best = null, bestScore = -1;
+    KNOWN_DEVICES.forEach(function(d){
+      var wm = Math.min(w,h) === Math.min(d.w,d.h) ? 1 : 0;
+      var hm = Math.max(w,h) === Math.max(d.w,d.h) ? 1 : 0;
+      var dm = d.dpr === dpr ? 1 : 0;
+      var score = wm + hm + dm;
+      if(score > bestScore){ bestScore = score; best = d; }
+    });
+    return {device:best, matchScore:bestScore};
+  }
+
+  /* ================= Refresh rate measurement ================= */
+  function measureRefreshRate(cb){
+    var frames = 0, start = null, last = null, deltas = [];
+    function step(ts){
+      if(start === null){ start = ts; last = ts; }
+      else { deltas.push(ts - last); last = ts; }
+      frames++;
+      if(ts - start < 400){ requestAnimationFrame(step); }
+      else {
+        if(deltas.length < 3){ cb(60); return; }
+        deltas.sort(function(a,b){return a-b;});
+        var mid = deltas[Math.floor(deltas.length/2)];
+        var fps = 1000/mid;
+        var snapped = fps > 100 ? 120 : (fps > 80 ? 90 : 60);
+        cb(snapped);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ================= Device detection ================= */
+  function detectDevice(){
+    var d = {};
+    d.screenW = screen.width || 0;
+    d.screenH = screen.height || 0;
+    d.innerW = window.innerWidth || 0;
+    d.innerH = window.innerHeight || 0;
+    d.dpr = window.devicePixelRatio || 1;
+    d.vvW = window.visualViewport ? Math.round(window.visualViewport.width) : d.innerW;
+    d.vvH = window.visualViewport ? Math.round(window.visualViewport.height) : d.innerH;
+    d.orientation = (screen.orientation && screen.orientation.type) || (Math.abs(window.orientation||0) === 90 ? 'landscape' : 'portrait');
+    d.maxTouchPoints = navigator.maxTouchPoints || 0;
+    d.userAgent = navigator.userAgent || '';
+    d.platform = navigator.platform || '';
+    d.standalone = ('standalone' in navigator) ? !!navigator.standalone : false;
+    d.displayModeStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    d.hasFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+    d.isIOS = /iPhone|iPad|iPod/.test(d.userAgent) && !window.MSStream;
+    return d;
+  }
+
+  /* ================= Core calibration algorithm ================= */
+  var PATTERN = [0, 3, -2, 4, -3, 2, -4, 1, -1, 5, -5, 2];
+
+  var FF_MID = {
+    general:  {baja:90,  media:130, alta:172},
+    redDot:   {baja:85,  media:120, alta:158},
+    scope2x:  {baja:68,  media:100, alta:132},
+    scope4x:  {baja:58,  media:85,  alta:112},
+    sniper:   {baja:32,  media:55,  alta:78},
+    freeLook: {baja:90,  media:130, alta:172}
+  };
+  var FF_SPREAD = { general:60, redDot:60, scope2x:50, scope4x:45, sniper:38, freeLook:60 };
+  var FF_PW = { general:0.45, redDot:0.42, scope2x:0.36, scope4x:0.30, sniper:0.24, freeLook:0.45 };
+
+  var HOLD_DUR = {baja:0.22, media:0.15, alta:0.10};
+  var IGNORE_REP = {baja:0.50, media:0.35, alta:0.20};
+  var GESTURE_WAIT = {baja:0.25, media:0.15, alta:0.08};
+  var TRACK_SPEED_PCT = {baja:35, media:60, alta:88};
+  var MOVE_TOLERANCE = {baja:12, media:8, alta:4};
+  var IDLE_OPACITY = {baja:30, media:22, alta:15};
+  var SWIPE_STEP_LEVEL = {baja:1, media:2, alta:3};      // índice base en SWIPE_STEP_LABELS
+  var SWIPE_STEP_LABELS = ['Estándar','×2','×4','×8','×16'];
+  var SCAN_DURATION = {baja:1.20, media:0.85, alta:0.55}; // s, Control por botón → Duración de exploración
+  var LOOPS_LEVEL = {baja:2, media:3, alta:5};            // Control por botón → Bucles (ciclos)
+  var CURSOR_STYLE_LEVEL = {baja:2, media:1, alta:0};     // índice en CURSOR_STYLE_LABELS (0=Sencillo,1=Refinado,2=Preciso)
+  var CURSOR_STYLE_LABELS = ['Sencillo','Refinado','Preciso'];
+  var CURSOR_AMOUNT_LEVEL = {baja:35, media:65, alta:95}; // Cantidad (velocidad) del cursor deslizante, 0–120
+  var MOUSE_DELAY_LEVEL = {baja:0.90, media:0.60, alta:0.30};  // Teclas del mouse → Demora inicial, 0–3 s
+  var MOUSE_MAXSPD_LEVEL = {baja:35, media:60, alta:90};       // Teclas del mouse → Velocidad máxima, 10–100 %
+
+  function calculateCalibration(input){
+    var dpr = input.dpr, refreshRate = input.refreshRate, touchPoints = input.maxTouchPoints;
+    var w = Math.max(input.screenW, input.screenH) || 800;
+    var h = Math.min(input.screenW, input.screenH) || 400;
+    var iteration = input.calibrationIteration || 0;
+    var level = input.targetLevel || 'media';
+
+    var diag = Math.sqrt(w*w + h*h);
+    var diagScore = clamp((diag - 660) / (1000 - 660), 0, 1);
+    var dprScore = clamp((dpr - 2) / (3 - 2), 0, 1);
+    var refreshScore = refreshRate >= 110 ? 1 : (refreshRate >= 85 ? 0.55 : 0);
+    var touchScore = touchPoints >= 5 ? 1 : 0.5;
+    var deviceScore = clamp(diagScore*0.35 + dprScore*0.25 + refreshScore*0.3 + touchScore*0.1, 0, 1);
+    var patternVal = PATTERN[((iteration % PATTERN.length) + PATTERN.length) % PATTERN.length];
+
+    function cat(key){
+      var mid = FF_MID[key][level];
+      var spread = FF_SPREAD[key];
+      var pw = FF_PW[key];
+      var base = mid + (deviceScore - 0.5) * spread * 0.5;
+      var variation = patternVal * pw;
+      return clamp(Math.round(base + variation), 1, 200);
+    }
+
+    var freeFire = {
+      general: cat('general'), redDot: cat('redDot'), scope2x: cat('scope2x'),
+      scope4x: cat('scope4x'), sniper: cat('sniper'), freeLook: cat('freeLook')
+    };
+
+    var holdDuration = clamp(+(HOLD_DUR[level] - deviceScore*0.03 + patternVal*0.003).toFixed(2), 0.05, 0.30);
+    var ignoreRepeat = clamp(+(IGNORE_REP[level] - deviceScore*0.05 + patternVal*0.004).toFixed(2), 0.15, 0.60);
+    var gestureWait = clamp(+(GESTURE_WAIT[level] - deviceScore*0.02 + patternVal*0.002).toFixed(2), 0.05, 0.30);
+    // Sensibilidad del seguimiento: se calcula SIEMPRE, tengas o no mouse/trackpad conectado ahora.
+    // hasFinePointer solo decide si te avisamos de que ahora mismo no tiene efecto — el valor es real igual.
+    var trackingSpeed = clamp(Math.round(TRACK_SPEED_PCT[level] + deviceScore*8 + patternVal), 5, 100);
+    var movementTolerance = clamp(Math.round(MOVE_TOLERANCE[level] - deviceScore*2 + patternVal*0.25), 2, 18);
+    var idleOpacity = clamp(Math.round(IDLE_OPACITY[level] + patternVal*0.6), 10, 45);
+
+    // Gestos de deslizamiento → movimiento requerido (Estándar/×2/×4/×8/×16)
+    var swipeStepIdx = clamp(Math.round(SWIPE_STEP_LEVEL[level] + deviceScore*1 + patternVal*0.15), 0, 4);
+    var swipeStepLabel = SWIPE_STEP_LABELS[swipeStepIdx];
+
+    // Control por botón (Switch Control)
+    var scanDuration = clamp(+(SCAN_DURATION[level] - deviceScore*0.15 + patternVal*0.02).toFixed(2), 0.30, 3.00);
+    var loops = clamp(Math.round(LOOPS_LEVEL[level] + patternVal*0.3), 1, 20);
+    // Cursor deslizante (dentro de Control por botón)
+    var cursorStyleIdx = clamp(Math.round(CURSOR_STYLE_LEVEL[level] + (0.5 - deviceScore)*0.6 + patternVal*0.05), 0, 2);
+    var cursorAmount = clamp(Math.round(CURSOR_AMOUNT_LEVEL[level] + deviceScore*10 + patternVal*1.2), 0, 120);
+    // Teclas del mouse (dentro de AssistiveTouch → Dispositivos apuntadores)
+    var mouseInitialDelay = clamp(+(MOUSE_DELAY_LEVEL[level] - deviceScore*0.15 + patternVal*0.02).toFixed(2), 0.00, 3.00);
+    var mouseMaxSpeed = clamp(Math.round(MOUSE_MAXSPD_LEVEL[level] + deviceScore*8 + patternVal), 10, 100);
+
+    var ios = {
+      holdDuration: holdDuration,
+      ignoreRepeat: ignoreRepeat,
+      gestureWait: gestureWait,
+      trackingSpeed: trackingSpeed,
+      movementTolerance: movementTolerance,
+      idleOpacity: idleOpacity,
+      swipeStepIdx: swipeStepIdx,
+      swipeStepLabel: swipeStepLabel,
+      scanDuration: scanDuration,
+      loops: loops,
+      cursorStyleIdx: cursorStyleIdx,
+      cursorAmount: cursorAmount,
+      mouseInitialDelay: mouseInitialDelay,
+      mouseMaxSpeed: mouseMaxSpeed
+    };
+
+    return { freeFire: freeFire, ios: ios, deviceScore: deviceScore };
+  }
+
+  /* ================= Calibration orchestration ================= */
+  var calibrationIteration = 0;
+  var lastDetected = null;
+  var lastResult = null;
+
+  var stepEls = Array.prototype.slice.call(document.querySelectorAll('.process-step'));
+  var progressFill = document.getElementById('progressFill');
+  var processCard = document.getElementById('processCard');
+  var resultsEl = document.getElementById('results');
+
+  function resetProcessUI(){
+    stepEls.forEach(function(el){ el.classList.remove('active','done'); });
+    progressFill.style.width = '0%';
+    processCard.classList.remove('hidden');
+    resultsEl.classList.add('hidden');
+  }
+
+  function runSteps(cb){
+    var i = 0;
+    function next(){
+      if(i > 0) stepEls[i-1].classList.remove('active');
+      if(i > 0) stepEls[i-1].classList.add('done');
+      if(i >= stepEls.length){ cb(); return; }
+      stepEls[i].classList.add('active');
+      progressFill.style.width = Math.round(((i+1)/stepEls.length)*100) + '%';
+      i++;
+      setTimeout(next, reducedMotion ? 40 : 220);
+    }
+    next();
+  }
+
+  function startCalibration(){
+    resetProcessUI();
+    var detected = detectDevice();
+    measureRefreshRate(function(rate){
+      detected.refreshRate = rate;
+      detected.calibrationIteration = calibrationIteration;
+      detected.targetLevel = targetLevel;
+      lastDetected = detected;
+      runSteps(function(){
+        var result = calculateCalibration(detected);
+        lastResult = result;
+        renderResults(detected, result);
+        processCard.classList.add('hidden');
+        resultsEl.classList.remove('hidden');
+      });
+    });
+  }
+
+  document.getElementById('recalBtn').addEventListener('click', function(){
+    calibrationIteration++;
+    startCalibration();
+  });
+
+  /* ================= Rendering ================= */
+  function confidenceFor(detected, matchScore){
+    var score = 55;
+    if(detected.screenW && detected.screenH) score += 10;
+    if(detected.dpr) score += 8;
+    if(detected.refreshRate) score += 8;
+    if(detected.maxTouchPoints >= 5) score += 6;
+    if(detected.isIOS) score += 5;
+    score += matchScore * 4;
+    return clamp(Math.round(score), 40, 99);
+  }
+
+  function setRing(pct){
+    var circ = 251.2;
+    var offset = circ - (circ * pct/100);
+    document.getElementById('confCircle').style.strokeDashoffset = offset;
+    document.getElementById('confPct').textContent = pct + '%';
+  }
+
+  function iosRow(name, value, note){
+    return '<div class="ios-row">' +
+      '<div class="ios-top"><span class="ios-name">'+name+'</span>' +
+      (value !== null && value !== undefined ? '<span class="ios-badge on">'+value+'</span>' : '') +
+      '</div>' +
+      (note ? '<div class="ios-val">'+note+'</div>' : '') +
+    '</div>';
+  }
+  function iosRowSet(name, valueLabel, valueOn){
+    return '<div class="ios-row"><div class="ios-top"><span class="ios-name">'+name+'</span>' +
+      '<span class="ios-badge'+(valueOn?' on':'')+'">'+valueLabel+'</span></div></div>';
+  }
+  function iosRowNA(name, note){
+    return '<div class="ios-row"><div class="ios-top"><span class="ios-name">'+name+'</span></div>' +
+      '<div class="ios-na">'+note+'</div></div>';
+  }
+
+  // Slider visual "barrita": réplica de la barra deslizante real de Ajustes de iOS,
+  // posicionada exactamente donde debes dejarla — no un número para teclear.
+  function iosSlider(name, value, min, max, step, unit, note, extra){
+    var pct = Math.round(((value - min) / (max - min)) * 100);
+    return '<div class="ios-row">' +
+      '<div class="ios-top"><span class="ios-name">'+name+'</span>' +
+      '<span class="ios-badge on">'+value+unit+'</span></div>' +
+      (note ? '<div class="ios-val">'+note+'</div>' : '') +
+      '<div class="ref-slider-wrap">' +
+        '<input class="ref-slider" type="range" tabindex="-1" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" disabled>' +
+        '<div class="ref-slider-labels"><span>'+min+unit+'</span><span>'+max+unit+'</span></div>' +
+      '</div>' +
+      '<div class="ref-slider-pos">Pon la barrita en Ajustes al <b>'+pct+'% de su recorrido</b> (de izquierda a derecha) hasta que el número de al lado marque <b>'+value+unit+'</b>.</div>' +
+      (extra ? '<div class="ios-na" style="margin-top:5px;">'+extra+'</div>' : '') +
+    '</div>';
+  }
+
+  // Slider de pasos discretos (p. ej. Estándar/×2/×4/×8/×16 de "Gestos de deslizamiento")
+  function iosSteppedSlider(name, labels, idx, note, extra){
+    return '<div class="ios-row">' +
+      '<div class="ios-top"><span class="ios-name">'+name+'</span>' +
+      '<span class="ios-badge on">'+labels[idx]+'</span></div>' +
+      (note ? '<div class="ios-val">'+note+'</div>' : '') +
+      '<div class="ref-slider-wrap">' +
+        '<input class="ref-slider" type="range" tabindex="-1" min="0" max="'+(labels.length-1)+'" step="1" value="'+idx+'" disabled>' +
+        '<div class="ref-slider-labels">' + labels.map(function(l){return '<span>'+l+'</span>';}).join('') + '</div>' +
+      '</div>' +
+      '<div class="ref-slider-pos">Mueve la barrita hasta la posición <b>'+(idx+1)+' de '+labels.length+'</b>, marcada <b>'+labels[idx]+'</b>.</div>' +
+      (extra ? '<div class="ios-na" style="margin-top:5px;">'+extra+'</div>' : '') +
+    '</div>';
+  }
+
+  // Réplica del control "− n +" (stepper) que usa iOS para valores como Bucles
+  function iosStepper(name, value, min, max, note, extra){
+    return '<div class="ios-row">' +
+      '<div class="ios-top"><span class="ios-name">'+name+'</span>' +
+      '<div class="stepper-visual"><span class="stepper-btn">–</span><span class="stepper-val">'+value+'</span><span class="stepper-btn">+</span></div>' +
+      '</div>' +
+      (note ? '<div class="ios-val">'+note+'</div>' : '') +
+      '<div class="ref-slider-pos">Pulsa "+" hasta llegar a <b>'+value+'</b> (rango real de este ajuste: '+min+'–'+max+').</div>' +
+      (extra ? '<div class="ios-na" style="margin-top:5px;">'+extra+'</div>' : '') +
+    '</div>';
+  }
+
+  function renderResults(detected, result){
+    var match = matchDevice(Math.max(detected.screenW,detected.screenH), Math.min(detected.screenW,detected.screenH), detected.dpr);
+    var conf = confidenceFor(detected, match.matchScore);
+    var deviceLabel = (match.matchScore >= 2 && match.device) ? match.device.name : 'iPhone — modelo estimado';
+
+    document.getElementById('deviceName').textContent = deviceLabel;
+    document.getElementById('deviceMeta').innerHTML =
+      detected.screenW+'×'+detected.screenH+' pt · DPR '+detected.dpr+' · '+detected.refreshRate+'Hz medido<br>' +
+      'Viewport '+detected.vvW+'×'+detected.vvH+' · Touch pts: '+detected.maxTouchPoints+' · '+detected.orientation;
+    setRing(conf);
+    document.getElementById('profileChip').textContent = 'PERFIL #' + String(calibrationIteration+1).padStart(2,'0') +
+      ' · '+targetLevel.toUpperCase()+' · ID ' + (detected.dpr+''+detected.refreshRate+'-'+(calibrationIteration+1));
+
+    // ---- Free Fire ----
+    var ffDefs = [
+      {k:'general', label:'General', hint:'Movimiento de cámara base'},
+      {k:'redDot', label:'Punto rojo', hint:'Mira sin aumento'},
+      {k:'scope2x', label:'Mira 2X', hint:'Aumento bajo'},
+      {k:'scope4x', label:'Mira 4X', hint:'Aumento medio'},
+      {k:'sniper', label:'Francotirador / AWM', hint:'Aumento alto'},
+      {k:'freeLook', label:'Vista libre', hint:'Cámara libre sin apuntar'}
+    ];
+    var ffHtml = '';
+    ffDefs.forEach(function(def){
+      var val = result.freeFire[def.k];
+      ffHtml += '<div class="stat-row">' +
+        '<div class="stat-left"><span class="stat-name">'+def.label+'</span><span class="stat-hint">'+def.hint+'</span></div>' +
+        '<div class="stat-right"><span class="stat-value">'+val+'</span>' +
+        '<button class="copy-btn" data-copy="'+val+'" title="Copiar">⧉</button></div>' +
+      '</div>';
+    });
+    document.getElementById('ffList').innerHTML = ffHtml;
+
+    var ios = result.ios;
+
+    // ---- Tocar (main screen) ----
+    var touchHtml = '';
+    touchHtml += iosRowSet('Alcance fácil', 'DESACTIVAR', false);
+    touchHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Evita que un deslizamiento accidental hacia abajo achique la pantalla durante la partida.</div>';
+    touchHtml += iosRowSet('Tocar o deslizar para activar', 'Sin impacto en el juego', false);
+    touchHtml += iosRowSet('Agitar para deshacer', 'DESACTIVAR', false);
+    touchHtml += '<div class="ios-na" style="margin:-4px 0 0;">Evita que un movimiento brusco del teléfono abra el menú "Deshacer" en pleno combate.</div>';
+    document.getElementById('touchMainList').innerHTML = touchHtml;
+
+    // ---- Reacción táctil ----
+    var hapticHtml = '';
+    hapticHtml += iosRowSet('Duración requerida', 'BREVE', true);
+    hapticHtml += '<div class="ios-na" style="margin:-4px 0 0;">De las 3 opciones (Breve/Predeterminada/Larga), Breve es la que menos retraso añade antes de reconocer una presión — la más adecuada para gaming en cualquier nivel.</div>';
+    document.getElementById('hapticList').innerHTML = hapticHtml;
+
+    // ---- Adaptaciones táctiles ----
+    var accomHtml = '';
+    accomHtml += iosRowSet('Adaptaciones táctiles', 'DESACTIVAR (por defecto)', false);
+    accomHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Actívalo solo si notas toques dobles o fantasma. Si lo activas, usa estos valores calculados para tu nivel:</div>';
+    accomHtml += iosSlider('Duración de presión', ios.holdDuration, 0.05, 0.30, 0.01, ' s',
+      'Tiempo que debes mantener el dedo antes de que se reconozca la presión.');
+    accomHtml += iosRowSet('Gestos de deslizamiento', 'ACTIVAR', true);
+    accomHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Necesario para que arrastrar el dedo (mover cámara / joystick) se siga reconociendo con Adaptaciones táctiles activo. Al activarlo aparece un ajuste más abajo: "movimiento requerido".</div>';
+    accomHtml += iosSteppedSlider('Movimiento requerido', ['Estándar','×2','×4','×8','×16'], ios.swipeStepIdx,
+      'Cuánta distancia debe recorrer el dedo antes de que el sistema lo reconozca como un deslizamiento (y no como un toque). A más multiplicador, menos deslizamientos accidentales, pero más dedo tienes que mover para girar la cámara.',
+      'Ruta exacta: Tocar → Adaptaciones táctiles → Gestos de deslizamiento (activar) → Movimiento requerido.');
+    accomHtml += iosSlider('Ignorar repetición', ios.ignoreRepeat, 0.15, 0.60, 0.01, ' s',
+      'Toques repetidos dentro de este intervalo se cuentan como uno solo.');
+    accomHtml += iosRowSet('Ayuda táctil', 'Usar la ubicación del toque inicial', true);
+    accomHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Registra el gesto donde pusiste el dedo primero, no donde lo levantaste — más predecible para apuntar.</div>';
+    accomHtml += iosSlider('Espera del gesto de ayuda táctil', ios.gestureWait, 0.05, 0.30, 0.01, ' s',
+      'Solo aplica si activas "Ayuda táctil".');
+    document.getElementById('accomList').innerHTML = accomHtml;
+
+    // ---- AssistiveTouch ----
+    var atHtml = '';
+    atHtml += iosRowSet('AssistiveTouch', 'DESACTIVAR (por defecto)', false);
+    atHtml += '<div class="ios-na" style="margin:-4px 0 8px;">El botón flotante puede obstruir la pantalla y causar toques accidentales. Actívalo solo si lo necesitas por accesibilidad; en ese caso usa:</div>';
+    atHtml += iosSlider('Opacidad de inactividad', ios.idleOpacity, 10, 45, 1, ' %',
+      'Mientras menor, menos estorba el ícono sobre la pantalla de juego.');
+    atHtml += iosRowSet('Mostrar menú siempre', 'DESACTIVAR', false);
+    atHtml += iosRowSet('Realizar gestos táctiles', 'ACTIVAR', true);
+    atHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Esta opción y la siguiente barrita pertenecen a "Dispositivos apuntadores", dentro de AssistiveTouch.</div>';
+    atHtml += iosSlider('Sensibilidad del seguimiento', ios.trackingSpeed, 5, 100, 1, ' %',
+      'Ruta exacta: Tocar → AssistiveTouch → Dispositivos apuntadores → Sensibilidad del seguimiento.',
+      (detected && detected.hasFinePointer)
+        ? 'Se detectó un puntero fino (mouse/trackpad) conectado ahora mismo — este valor te afecta directamente en este momento.'
+        : 'Ahora mismo no tienes mouse ni trackpad conectado por Bluetooth, así que este ajuste no cambia nada en tu partida todavía. Aun así queda calculado: si en algún momento conectas un mouse o trackpad al iPhone (Ajustes → Bluetooth, o vía AssistiveTouch → Dispositivos apuntadores), este es el valor de sensibilidad de seguimiento que debes dejar puesto para que el cursor se mueva a la misma "sensación" que el resto de tu calibración.');
+    atHtml += iosRowSet('Teclas del mouse', 'ACTIVAR', true);
+    atHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Ruta exacta: Tocar → AssistiveTouch → Dispositivos apuntadores → Teclas del mouse. Esta función mueve el puntero con las flechas de un teclado (USB o Bluetooth) conectado — no necesitas un mouse físico para usarla, solo un teclado.</div>';
+    atHtml += iosSlider('Demora inicial', ios.mouseInitialDelay, 0.00, 3.00, 0.05, ' s',
+      'Cuánto tarda el puntero en empezar a moverse después de mantener presionada una flecha. Más alto = menos arranques accidentales; más bajo = reacción más inmediata.');
+    atHtml += iosSlider('Velocidad máxima', ios.mouseMaxSpeed, 10, 100, 1, ' %',
+      'La velocidad máxima que alcanza el puntero cuando mantienes la flecha presionada.');
+    atHtml += iosRowSet('Control de permanencia', 'DESACTIVAR', false);
+    atHtml += iosSlider('Tolerancia al movimiento', ios.movementTolerance, 2, 18, 1, ' pt',
+      'Solo aplica si activas Control de permanencia.');
+    atHtml += iosRowSet('Gestos en el borde de la pantalla', 'DESACTIVAR', false);
+    atHtml += '<div class="ios-na" style="margin:-4px 0 0;">Evita que tu dedo dispare el Centro de control o de notificaciones al deslizar cerca del borde durante la partida.</div>';
+    document.getElementById('atList').innerHTML = atHtml;
+
+    // ---- Control por botón (Switch Control) ----
+    var swHtml = '';
+    swHtml += iosRowSet('Control por botón', 'DESACTIVAR (recomendado)', false);
+    swHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Es un método de entrada alternativo pensado para interruptores físicos o exploración asistida, no para jugar directo con los dedos: sustituye el toque inmediato por un cursor de exploración y añade retardo. Para Free Fire competitivo, déjalo <b style="color:var(--ink)">DESACTIVADO</b>.</div>';
+    swHtml += '<div class="ios-val" style="margin:0 0 4px;">Si de todas formas quieres probarlo — por ejemplo para fijar un punto de mira estático con el "Cursor deslizante" — estos son los valores calculados para tu nivel:</div>';
+    swHtml += iosSlider('Duración de exploración', ios.scanDuration, 0.30, 3.00, 0.05, ' s',
+      'Velocidad con la que el resaltado/cursor pasa automáticamente de un elemento al siguiente.',
+      'Ruta exacta: Accesibilidad → Control por botón → Duración de exploración.');
+    swHtml += iosStepper('Bucles (ciclos)', ios.loops, 1, 20,
+      'Número de veces que se recorre toda la pantalla en modo automático antes de que Control por botón se oculte por sí solo.',
+      'Ruta exacta: Accesibilidad → Control por botón → Bucles.');
+    swHtml += iosRowSet('Modo de exploración', 'Cursor deslizante', true);
+    swHtml += '<div class="ios-na" style="margin:-4px 0 8px;">Con un ítem resaltado, abre el menú Exploración y elige "Cursor deslizante": una cruz recorre la pantalla y activas tu botón para fijarla en un punto exacto — es el modo que se usa para simular un punto de referencia fijo en pantalla. Sigue sumando el retardo de "Duración de exploración" de arriba, así que solo vale la pena si de verdad lo necesitas por accesibilidad; para jugar rápido, el toque directo (sin Control por botón) siempre es más veloz.</div>';
+    swHtml += '<div class="ios-val" style="margin:4px 0 0;">Dentro de Cursor deslizante (toca el ícono de ajustes ⚙ en el menú Exploración) hay dos ajustes propios:</div>';
+    swHtml += iosSteppedSlider('Estilo de cursor deslizante', CURSOR_STYLE_LABELS, ios.cursorStyleIdx,
+      'Sencillo cruza la pantalla de un solo pase (más rápido, menos fino). Preciso frena y reafirma antes de fijar la cruz (más lento, más exacto). Refinado es el punto medio.',
+      'Ruta exacta: Control por botón → Cursor deslizante ⚙ → Estilo.');
+    swHtml += iosSlider('Cantidad', ios.cursorAmount, 0, 120, 1, '',
+      'Velocidad con la que se mueve la cruz del cursor deslizante por la pantalla: 0 es lentísimo, 120 es lo más rápido.',
+      'Ruta exacta: Control por botón → Cursor deslizante ⚙ → Cantidad.');
+    document.getElementById('switchList').innerHTML = swHtml;
+
+    // bind copy buttons
+    Array.prototype.slice.call(document.querySelectorAll('#ffList .copy-btn')).forEach(function(btn){
+      btn.addEventListener('click', function(){ copyText(btn.getAttribute('data-copy'), btn); });
+    });
+  }
+
+  /* ================= Copy all ================= */
+  document.getElementById('copyAllBtn').addEventListener('click', function(){
+    if(!lastResult){ return; }
+    var ff = lastResult.freeFire, ios = lastResult.ios;
+    var lines = [];
+    lines.push('FREE FIRE — Sensibilidad (Perfil #'+String(calibrationIteration+1).padStart(2,'0')+', nivel '+targetLevel.toUpperCase()+')');
+    lines.push('General: '+ff.general);
+    lines.push('Punto rojo: '+ff.redDot);
+    lines.push('2X: '+ff.scope2x);
+    lines.push('4X: '+ff.scope4x);
+    lines.push('AWM/Francotirador: '+ff.sniper);
+    lines.push('Vista libre: '+ff.freeLook);
+    lines.push('');
+    lines.push('iOS — Accesibilidad → Tocar');
+    lines.push('Alcance fácil: Desactivar');
+    lines.push('Agitar para deshacer: Desactivar');
+    lines.push('Reacción táctil → Duración requerida: Breve');
+    lines.push('');
+    lines.push('Adaptaciones táctiles (activar solo si hay toques fantasma):');
+    lines.push('Duración de presión: '+ios.holdDuration+'s');
+    lines.push('Gestos de deslizamiento: Activar → Movimiento requerido: '+ios.swipeStepLabel);
+    lines.push('Ignorar repetición: '+ios.ignoreRepeat+'s');
+    lines.push('Ayuda táctil: Usar ubicación del toque inicial');
+    lines.push('Espera del gesto de ayuda táctil: '+ios.gestureWait+'s');
+    lines.push('');
+    lines.push('AssistiveTouch (activar solo si lo necesitas):');
+    lines.push('Opacidad de inactividad: '+ios.idleOpacity+'%');
+    lines.push('Mostrar menú siempre: Desactivar');
+    lines.push('Realizar gestos táctiles: Activar');
+    lines.push('Sensibilidad del seguimiento: '+ios.trackingSpeed+'% (solo tiene efecto con mouse/trackpad conectado)');
+    lines.push('Teclas del mouse: Activar → Demora inicial: '+ios.mouseInitialDelay+'s · Velocidad máxima: '+ios.mouseMaxSpeed+'% (requiere teclado conectado, no mouse)');
+    lines.push('Control de permanencia: Desactivar');
+    lines.push('Tolerancia al movimiento: '+ios.movementTolerance+'pt');
+    lines.push('Gestos en el borde de la pantalla: Desactivar');
+    lines.push('');
+    lines.push('Control por botón (solo si lo necesitas; recomendado: Desactivar):');
+    lines.push('Duración de exploración: '+ios.scanDuration+'s');
+    lines.push('Bucles (ciclos): '+ios.loops);
+    lines.push('Modo de exploración: Cursor deslizante → Estilo: '+CURSOR_STYLE_LABELS[ios.cursorStyleIdx]+' · Cantidad: '+ios.cursorAmount+'/120');
+    copyText(lines.join('\n'), null);
+    toast('Configuración completa copiada');
+  });
+
+})();
+</script>
+</body>
+</html>
