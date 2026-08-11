@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Void Satan Sensi</title>
+
+<!-- Web Clip / "Añadir a pantalla de inicio" en iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Void Satan Sensi">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#040406">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+
+<style>
+/* ======================================================================
+   TOKENS
+   ====================================================================== */
+:root{
+  --bg:#020203;
+  --ink:#f5f6f8;
+  --ink-dim:rgba(245,246,248,0.62);
+  --ink-faint:rgba(245,246,248,0.36);
+  --panel:rgba(9,8,11,0.50);
+  --panel-strong:rgba(15,12,16,0.66);
+  --line:rgba(255,255,255,0.07);
+
+  /* Paleta RGB neón — un único ciclo de matiz usado en bordes y acentos */
+  --hue1:#ff3b3b; --hue2:#ff3bd6; --hue3:#b23bff; --hue4:#3b6bff;
+  --hue5:#3bd8ff; --hue6:#3bffa0; --hue7:#e8ff3b;
+  --accent:#ff3b6a;               /* acento estático de respaldo (sin animación) */
+  --accent-glow:rgba(255,59,106,0.35);
+  --accent-glow-soft:rgba(255,59,106,0.15);
+  --border:rgba(255,255,255,0.12);
+  --border-bright:rgba(255,255,255,0.30);
+  --mono:'SF Mono',ui-monospace,'Cascadia Code','Roboto Mono',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  --rgb-conic: conic-gradient(from var(--angle,0deg),
+      var(--hue1), var(--hue2), var(--hue3), var(--hue4), var(--hue5), var(--hue6), var(--hue7), var(--hue1));
+}
+@property --angle{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; }
+body{
+  margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+  min-height:100vh; overflow-x:hidden; position:relative; -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 1000px 600px at 8% -8%, rgba(178,59,255,0.10), transparent 60%),
+    radial-gradient(ellipse 850px 620px at 106% 6%, rgba(59,216,255,0.09), transparent 58%),
+    radial-gradient(ellipse 950px 720px at 50% 118%, rgba(255,59,106,0.10), transparent 62%),
+    linear-gradient(180deg, #050409 0%, #020203 45%, #010102 100%);
+}
+body::after{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.18;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 0%, #000 0%, transparent 75%);
+}
+.screen{ content-visibility:auto; }
+@keyframes spinAngle{ to{ --angle:360deg; } }
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+body.bg-paused .rgb-anim{ animation-play-state:paused !important; }
+
+#orbField{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; contain:strict; }
+.orb{ position:absolute; border-radius:50%; animation:roam ease-in-out infinite; filter:blur(3px); will-change:transform; transform:translateZ(0);
+  background:radial-gradient(circle at 33% 30%, rgba(255,255,255,0.45), rgba(255,255,255,0.06) 45%, transparent 74%); }
+.orb.c1{ background:radial-gradient(circle at 33% 30%, rgba(255,120,150,0.5), rgba(255,59,106,0.22) 46%, transparent 76%); }
+.orb.c2{ background:radial-gradient(circle at 33% 30%, rgba(150,140,255,0.5), rgba(120,80,255,0.22) 46%, transparent 76%); }
+.orb.c3{ background:radial-gradient(circle at 33% 30%, rgba(110,220,255,0.5), rgba(59,180,255,0.22) 46%, transparent 76%); }
+.orb.big{ filter:blur(18px); }
+#orbField.paused .orb{ animation-play-state:paused; }
+@keyframes roam{
+  0%{ transform:translate3d(0,0,0) scale(1); }
+  28%{ transform:translate3d(var(--dx1,20vw),var(--dy1,-10vh),0) scale(1.06); }
+  58%{ transform:translate3d(var(--dx2,-15vw),var(--dy2,18vh),0) scale(0.96); }
+  82%{ transform:translate3d(calc(var(--dx1,20vw) * -0.4),calc(var(--dy2,18vh) * 0.5),0) scale(1.03); }
+  100%{ transform:translate3d(0,0,0) scale(1); }
+}
+@media (prefers-reduced-motion:reduce){ .orb{ animation:none; } }
+
+.screen{ position:relative; z-index:1; min-height:100vh; display:flex; align-items:center; justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 24px) 16px calc(env(safe-area-inset-bottom,0px) + 40px); }
+
+/* ======================================================================
+   PANEL BASE + BORDE RGB ANIMADO (técnica padding-box / border-box)
+   ====================================================================== */
+.glass{
+  position:relative; background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), transparent 24%),
+    var(--panel);
+  background-origin:border-box;
+  backdrop-filter:blur(16px) saturate(130%); -webkit-backdrop-filter:blur(16px) saturate(130%);
+  border:1.3px solid transparent;
+  border-radius:18px;
+  box-shadow:0 26px 64px -26px rgba(0,0,0,0.9), 0 1px 0 0 rgba(255,255,255,0.05) inset;
+  isolation:isolate; overflow:hidden; contain:layout style paint;
+}
+.glass::before{
+  content:''; position:absolute; inset:0; z-index:-1; border-radius:inherit; padding:1.3px;
+  background:var(--rgb-conic);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  opacity:0.55; animation:spinAngle 16s linear infinite;
+}
+.glass.rgb-anim::before{ animation:spinAngle 16s linear infinite; }
+.glass > *{ position:relative; z-index:1; }
+
+.login-card{ width:100%; max-width:360px; padding:40px 28px 30px; text-align:center; }
+.brand-mark{ width:58px;height:58px;margin:0 auto 20px; border-radius:14px; position:relative;
+  background:linear-gradient(150deg, rgba(255,59,106,0.35), rgba(120,80,255,0.12));
+  border:1px solid var(--border-bright); display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono); font-weight:700; font-size:20px; color:#fff; box-shadow:0 0 26px -4px var(--accent-glow); }
+.login-card h1{ font-size:17px; letter-spacing:0.06em; margin:0 0 4px; font-weight:800; }
+.login-card p.sub{ color:var(--ink-faint); font-size:12.5px; margin:0 0 22px; }
+.login-security-note{ font-size:10.5px; color:var(--ink-faint); line-height:1.6; margin:16px 0 0; padding:10px 12px; border:1px dashed var(--line); border-radius:10px; text-align:left; }
+.field{ text-align:left; margin-bottom:14px; }
+.field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-faint); margin-bottom:6px; }
+.field input{ width:100%; padding:13px 14px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,0.35); color:var(--ink); font-size:15px; font-family:var(--mono); outline:none; transition:border-color .2s, box-shadow .2s; }
+.field input:focus-visible{ border-color:var(--border-bright); box-shadow:0 0 0 3px var(--accent-glow-soft); }
+
+.btn{
+  width:100%; padding:14px; border-radius:12px; border:1px solid var(--border-bright); position:relative; overflow:hidden;
+  background:linear-gradient(180deg, rgba(255,59,106,0.26), rgba(20,10,20,0.5));
+  color:#fff; font-size:13.5px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; cursor:pointer; margin-top:6px;
+  transition:transform .15s cubic-bezier(.2,.8,.3,1.3), box-shadow .2s, background .2s;
+  box-shadow:0 0 20px -6px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.10);
+}
+.btn:active{ transform:scale(0.965); }
+.btn:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+.btn.ghost{ background:rgba(255,255,255,0.03); border-color:var(--line); color:var(--ink-dim); box-shadow:none; }
+.btn.ghost:active{ background:rgba(255,255,255,0.07); }
+.btn.small{ padding:10px; font-size:11.5px; }
+.btn.danger{ border-color:rgba(255,80,80,0.5); color:#ffb0b0; background:rgba(255,40,40,0.10); box-shadow:none; }
+.login-err{ color:var(--hue1); font-size:12px; margin-top:12px; min-height:14px; }
+
+#appScreen{ display:none; flex-direction:column; align-items:center; padding-top:30px; }
+.wrap{ width:100%; max-width:480px; display:flex; flex-direction:column; gap:14px; }
+.top-bar{ display:flex; align-items:center; justify-content:space-between; padding:0 6px 4px; gap:8px; }
+.top-bar .title{ font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--ink-faint); font-family:var(--mono); }
+.top-bar-actions{ display:flex; align-items:center; gap:12px; }
+.top-bar button.linklike{ font-size:11px; color:var(--ink-faint); background:none; border:none; cursor:pointer; text-decoration:underline; padding:4px; }
+h1.app-title{ font-size:20px; margin:0 0 2px; font-weight:800; letter-spacing:0.01em; padding:0 6px; }
+h1.app-title span{ background:var(--rgb-conic); -webkit-background-clip:text; background-clip:text; color:transparent; }
+p.app-sub{ margin:0; color:var(--ink-faint); font-size:12px; padding:0 6px; }
+
+/* Expert mode toggle */
+.expert-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 16px; }
+.switch{ width:42px; height:25px; border-radius:20px; background:rgba(255,255,255,0.08); border:1px solid var(--line); position:relative; cursor:pointer; flex-shrink:0; transition:background .2s; }
+.switch .knob{ position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%; background:#fff; transition:transform .18s cubic-bezier(.3,.8,.4,1); box-shadow:0 1px 3px rgba(0,0,0,0.4); }
+.switch.on{ background:linear-gradient(90deg, var(--hue1), var(--hue3)); }
+.switch.on .knob{ transform:translateX(17px); }
+.expert-label b{ display:block; font-size:12.5px; }
+.expert-label span{ display:block; font-size:10.5px; color:var(--ink-faint); margin-top:2px; }
+
+/* Presets */
+.preset-card{ padding:16px 16px 15px; }
+.preset-title{ font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--ink-faint); margin-bottom:11px; display:flex; justify-content:space-between; align-items:center; }
+.preset-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.preset-btn{ padding:12px 8px; border-radius:12px; border:1px solid var(--line); background:rgba(255,255,255,0.02); color:var(--ink-dim); cursor:pointer; text-align:left; transition:border-color .2s, background .2s; }
+.preset-btn b{ display:block; font-size:12.5px; color:var(--ink); font-weight:700; }
+.preset-btn span{ display:block; font-size:10px; color:var(--ink-faint); margin-top:3px; line-height:1.4; }
+.preset-btn.active{ border-color:var(--border-bright); background:rgba(255,255,255,0.06); box-shadow:0 0 16px -6px var(--accent-glow); }
+.preset-btn.active b{ color:#fff; }
+.custom-panel{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); display:none; }
+.custom-panel.open{ display:block; }
+.custom-row{ margin-bottom:14px; }
+.custom-row-top{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
+.custom-row-top b{ color:var(--ink); font-weight:600; }
+.custom-row-top span{ font-family:var(--mono); color:var(--ink-dim); }
+.app-slider{ -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px; outline:none; background:rgba(255,255,255,0.08); }
+.app-slider::-webkit-slider-thumb{ -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 0 0 4px var(--accent-glow), 0 2px 6px rgba(0,0,0,0.5); cursor:pointer; margin-top:0; }
+.app-slider::-moz-range-thumb{ width:18px; height:18px; border-radius:50%; background:#fff; border:none; box-shadow:0 0 0 4px var(--accent-glow); cursor:pointer; }
+.app-note{ font-size:10.5px; color:var(--ink-faint); margin-top:14px; line-height:1.6; }
+.app-note b{ color:var(--ink-dim); }
+
+/* Drag diagnostic */
+.diag-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+.diag-btn{ padding:11px 8px; font-size:11.5px; text-align:left; border-radius:11px; border:1px solid var(--line); background:rgba(255,255,255,0.02); color:var(--ink-dim); cursor:pointer; line-height:1.35; }
+.diag-btn.active{ border-color:var(--border-bright); background:rgba(255,255,255,0.07); color:#fff; }
+.feedback-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.feedback-chip{ padding:9px 13px; border-radius:20px; border:1px solid var(--line); background:rgba(255,255,255,0.02); font-size:12px; color:var(--ink-dim); cursor:pointer; }
+.feedback-chip.active{ border-color:var(--border-bright); background:rgba(255,255,255,0.08); color:#fff; }
+
+.process-card{ padding:26px 22px; }
+.process-step{ display:flex; align-items:center; gap:12px; padding:9px 0; font-size:13px; color:var(--ink-faint); opacity:0.3; transition:opacity .3s; }
+.process-step.active{ opacity:1; color:var(--ink); }
+.process-step.done{ opacity:0.5; color:var(--ink-dim); }
+.step-dot{ width:8px; height:8px; border-radius:50%; background:var(--ink-faint); flex-shrink:0; transition:background .3s; }
+.process-step.active .step-dot{ background:var(--hue1); box-shadow:0 0 10px 3px var(--accent-glow); animation:pulse 1s infinite; }
+.process-step.done .step-dot{ background:rgba(255,255,255,0.4); }
+@keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+.progress-track{ height:3px; border-radius:3px; background:rgba(255,255,255,0.06); margin-top:16px; overflow:hidden; }
+.progress-fill{ height:100%; background:var(--rgb-conic); width:0%; transition:width .35s ease; }
+
+.result-head{ padding:22px 22px 20px; text-align:center; }
+.ring-wrap{ width:92px; height:92px; margin:0 auto 12px; position:relative; }
+.ring-label{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ring-label b{ font-family:var(--mono); font-size:18px; }
+.ring-label span{ font-size:8.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.06em; }
+.device-name{ font-size:16px; font-weight:700; margin:2px 0 2px; }
+.device-status{ display:inline-block; font-size:9.5px; font-family:var(--mono); letter-spacing:0.06em; text-transform:uppercase; padding:2px 8px; border-radius:8px; border:1px solid var(--line); color:var(--ink-faint); margin-bottom:6px; }
+.device-status.identified{ color:#7dffb0; border-color:rgba(125,255,176,0.4); }
+.device-status.estimated{ color:#ffd97d; border-color:rgba(255,217,125,0.4); }
+.device-meta{ font-size:11px; color:var(--ink-faint); font-family:var(--mono); line-height:1.6; }
+.profile-chip{ display:inline-block; margin-top:12px; padding:5px 13px; border-radius:20px; border:1px solid var(--border-bright); font-family:var(--mono); font-size:10.5px; color:#fff; background:rgba(255,255,255,0.05); }
+
+.section-card{ padding:19px 18px 17px; }
+.mega-acc{ padding:0; overflow:hidden; }
+.mega-acc > summary{ list-style:none; cursor:pointer; padding:18px 18px 17px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.mega-acc > summary::-webkit-details-marker{ display:none; }
+.mega-acc-title{ font-size:12.5px; text-transform:uppercase; letter-spacing:0.09em; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:9px; }
+.mega-acc-title .num{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.06); border:1px solid var(--border-bright); color:#fff; font-size:11px; font-weight:800; flex-shrink:0; }
+.mega-acc-sub{ font-size:10.5px; color:var(--ink-faint); font-weight:500; text-transform:none; letter-spacing:0; margin-top:2px; }
+.acc-chevron{ width:20px; height:20px; flex-shrink:0; color:var(--ink-dim); transition:transform .18s ease; }
+.mega-acc[open] > summary .acc-chevron{ transform:rotate(180deg); }
+.mega-acc-body{ padding:0 18px 20px; display:flex; flex-direction:column; gap:14px; border-top:1px solid var(--line); padding-top:16px; }
+
+.cat-acc{ background:rgba(255,255,255,0.015); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.cat-acc > summary{ list-style:none; cursor:pointer; padding:13px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.cat-acc > summary::-webkit-details-marker{ display:none; }
+.cat-acc-name{ font-size:12.5px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:8px; }
+.cat-acc-name i{ color:var(--hue1); font-style:normal; font-size:10px; }
+.cat-acc-path{ font-size:10px; color:var(--ink-faint); font-family:var(--mono); margin-top:3px; }
+.cat-acc[open] > summary .acc-chevron{ transform:rotate(180deg); }
+.cat-acc-body{ padding:2px 14px 15px; border-top:1px solid var(--line); }
+.cat-acc-body .section-path{ margin-top:10px; }
+
+.fire-btn-box{ display:flex; align-items:center; gap:16px; padding:14px 16px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,0.025); }
+.fire-btn-visual{ position:relative; width:64px; height:64px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.fire-btn-visual .ring{ position:absolute; inset:0; border-radius:50%; border:2px dashed var(--border-bright); }
+.fire-btn-visual .dot{ border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff, var(--hue1) 65%); box-shadow:0 0 16px var(--accent-glow); }
+.fire-btn-info b{ display:block; font-size:21px; color:var(--ink); font-family:var(--mono); }
+.fire-btn-info span{ font-size:11px; color:var(--ink-dim); line-height:1.5; }
+.fire-btn-range{ display:flex; justify-content:space-between; font-size:10px; color:var(--ink-faint); font-family:var(--mono); margin-top:8px; }
+
+/* HUD mock */
+.hud-mock{ position:relative; width:100%; aspect-ratio:16/9; border-radius:14px; border:1px solid var(--line); background:linear-gradient(160deg, rgba(255,255,255,0.03), rgba(0,0,0,0.3)); overflow:hidden; margin-top:10px; }
+.hud-fire{ position:absolute; border-radius:50%; border:1.5px solid var(--border-bright); background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.35), rgba(255,59,106,0.28) 60%, transparent 85%); }
+.hud-zone{ position:absolute; border:1px dashed rgba(255,255,255,0.18); border-radius:14px; }
+.hud-label{ position:absolute; font-family:var(--mono); font-size:8.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.06em; }
+
+.section-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.section-title h2{ font-size:12px; text-transform:uppercase; letter-spacing:0.11em; margin:0; color:var(--ink); font-weight:700; }
+.section-title h2 i{ color:var(--hue1); font-style:normal; }
+.section-path{ font-size:10.5px; color:var(--ink-faint); font-family:var(--mono); margin-bottom:10px; line-height:1.6; }
+
+.stat-row{ display:flex; align-items:center; justify-content:space-between; padding:11px 4px; border-bottom:1px solid var(--line); gap:10px; }
+.stat-row:last-of-type{ border-bottom:none; }
+.stat-left{ display:flex; flex-direction:column; min-width:0; }
+.stat-name{ font-size:13px; color:var(--ink); font-weight:600; }
+.stat-hint{ font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+.stat-explain{ font-size:10.5px; color:var(--ink-dim); margin-top:5px; line-height:1.5; grid-column:1/-1; }
+.stat-right{ display:flex; align-items:center; gap:9px; flex-shrink:0; }
+.stat-value{ font-family:var(--mono); font-size:17px; font-weight:800; color:#fff; min-width:34px; text-align:right; }
+.copy-btn{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); color:var(--ink-dim); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color .2s, transform .12s; flex-shrink:0; }
+.copy-btn:active{ transform:scale(0.9); }
+.copy-btn.copied{ border-color:var(--border-bright); color:#fff; background:rgba(255,255,255,0.08); }
+.stat-block{ padding:11px 4px; border-bottom:1px solid var(--line); }
+.stat-block:last-child{ border-bottom:none; }
+
+.ios-row{ padding:10px 4px; border-bottom:1px solid var(--line); }
+.ios-row:last-child{ border-bottom:none; }
+.ios-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.ios-name{ font-size:12.5px; font-weight:600; }
+.ios-badge{ font-family:var(--mono); font-size:10.5px; padding:3px 10px; border-radius:20px; border:1px solid var(--line); color:var(--ink-dim); white-space:nowrap; flex-shrink:0; background:rgba(255,255,255,0.02); }
+.ios-badge.on{ border-color:var(--border-bright); color:#fff; background:rgba(255,255,255,0.07); }
+.ios-val{ font-family:var(--mono); font-size:12.5px; color:var(--ink); margin-top:4px; }
+.ios-na{ font-size:11px; color:var(--ink-faint); font-style:italic; margin-top:3px; }
+
+/* Slider iOS: recorrido IZQUIERDO relleno, thumb pequeño — imita Ajustes real */
+.ref-slider-wrap{ margin-top:10px; }
+.ref-slider{ width:100%; height:22px; -webkit-appearance:none; appearance:none; background:transparent; margin:0; display:block; }
+.ref-slider::-webkit-slider-runnable-track{ height:4px; border-radius:4px; }
+.ref-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:17px; height:17px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.5); margin-top:-6.5px; border:none; }
+.ref-slider::-moz-range-track{ height:4px; border-radius:4px; background:rgba(255,255,255,0.12); }
+.ref-slider::-moz-range-progress{ height:4px; border-radius:4px; background:#fff; }
+.ref-slider::-moz-range-thumb{ width:15px; height:15px; border-radius:50%; background:#fff; border:none; }
+.ref-slider:disabled{ opacity:1; cursor:default; }
+.ref-slider-labels{ display:flex; justify-content:space-between; font-size:9.5px; color:var(--ink-faint); font-family:var(--mono); margin-top:3px; }
+.ref-slider-pos{ font-size:10.5px; color:var(--ink-dim); margin-top:7px; line-height:1.5; }
+.ref-slider-pos b{ color:var(--ink); }
+
+.ios-opt-list{ margin-top:8px; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.015); }
+.ios-opt-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 12px; font-size:12px; color:var(--ink-dim); border-bottom:1px solid var(--line); }
+.ios-opt-row:last-child{ border-bottom:none; }
+.ios-opt-row.sel{ color:var(--ink); font-weight:600; }
+.ios-opt-check{ color:#fff; font-weight:700; }
+
+.stepper-visual{ display:flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; flex-shrink:0; background:rgba(255,255,255,0.02); }
+.stepper-btn{ width:27px; height:27px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.03); color:var(--ink-dim); font-size:15px; font-family:var(--mono); }
+.stepper-val{ min-width:32px; text-align:center; font-family:var(--mono); font-size:12.5px; font-weight:700; color:#fff; border-left:1px solid var(--line); border-right:1px solid var(--line); padding:0 4px; height:27px; display:flex; align-items:center; justify-content:center; }
+
+.link-note{ font-size:11.5px; color:var(--ink-faint); line-height:1.6; padding:12px 4px 2px; border-top:1px dashed var(--line); margin-top:6px; }
+.link-note b{ color:var(--ink); font-weight:600; }
+.info-note{ font-size:11px; color:var(--ink-faint); line-height:1.65; background:rgba(255,255,255,0.02); border:1px dashed var(--line); border-radius:12px; padding:11px 13px; margin-top:2px; }
+
+.actions-row{ display:flex; gap:10px; }
+.actions-row .btn{ margin-top:0; }
+
+.explain-card{ padding:19px 18px 21px; font-size:12.5px; line-height:1.7; color:var(--ink-dim); }
+.explain-card h2{ font-size:12px; text-transform:uppercase; letter-spacing:0.11em; margin:0 0 10px; color:var(--ink); }
+.explain-card ol{ margin:0; padding-left:18px; }
+.explain-card li{ margin-bottom:9px; }
+.explain-card li b{ color:var(--ink); }
+
+/* Expert data grid */
+.kv-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px 12px; margin-top:6px; }
+.kv{ font-size:11px; }
+.kv b{ display:block; color:var(--ink-faint); font-weight:500; font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px; }
+.kv span{ font-family:var(--mono); color:var(--ink); }
+.kv span.na{ color:var(--ink-faint); font-style:italic; }
+.diff-pos{ color:#7dffb0; } .diff-neg{ color:#ff9a9a; } .diff-zero{ color:var(--ink-faint); }
+
+/* History / profiles / compare lists */
+.list-item{ display:flex; align-items:center; justify-content:space-between; padding:12px 4px; border-bottom:1px solid var(--line); gap:10px; }
+.list-item:last-child{ border-bottom:none; }
+.list-item-main{ min-width:0; }
+.list-item-main b{ display:block; font-size:12.5px; }
+.list-item-main span{ display:block; font-size:10.5px; color:var(--ink-faint); font-family:var(--mono); margin-top:2px; }
+.list-item-actions{ display:flex; gap:6px; flex-shrink:0; }
+.icon-btn{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); color:var(--ink-dim); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.icon-btn:active{ transform:scale(0.92); }
+.empty-state{ font-size:12px; color:var(--ink-faint); text-align:center; padding:18px 8px; }
+.save-row{ display:flex; gap:8px; margin-top:12px; }
+.save-row input{ flex:1; padding:11px 12px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,0.3); color:var(--ink); font-size:13px; }
+.compare-select{ width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,0.3); color:var(--ink); font-size:12.5px; margin-bottom:8px; }
+.compare-table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:11.5px; }
+.compare-table th, .compare-table td{ padding:8px 6px; text-align:left; border-bottom:1px solid var(--line); }
+.compare-table th{ color:var(--ink-faint); font-weight:600; text-transform:uppercase; font-size:9.5px; letter-spacing:0.04em; }
+.compare-table td{ font-family:var(--mono); color:var(--ink); }
+.compare-table tr td:first-child, .compare-table tr th:first-child{ font-family:var(--sans); color:var(--ink-dim); font-size:11px; }
+
+footer.app-footer{ text-align:center; color:var(--ink-faint); font-size:10.5px; padding:8px 0 20px; line-height:1.6; }
+.hidden{ display:none !important; }
+
+.toast{ position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 22px); left:50%; transform:translateX(-50%) translateY(20px); z-index:50; background:rgba(10,8,12,0.88); border:1px solid var(--border-bright); color:var(--ink); padding:11px 20px; border-radius:12px; font-size:12.5px; opacity:0; transition:opacity .25s, transform .25s; backdrop-filter:blur(16px) saturate(150%); -webkit-backdrop-filter:blur(16px) saturate(150%); pointer-events:none; max-width:88vw; text-align:center; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.music-toggle{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 14px); right:14px; z-index:40; width:40px; height:40px; border-radius:50%; border:1px solid var(--border-bright); background:rgba(10,8,12,0.7); backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%); display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff; cursor:pointer; transition:transform .15s; }
+.music-toggle:active{ transform:scale(0.9); }
+.music-toggle.muted{ color:var(--ink-faint); border-color:var(--line); }
+
+:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+@media (max-width:380px){ .wrap{ max-width:100%; } .stat-value{ font-size:15px; } .preset-grid{ grid-template-columns:1fr; } .diag-grid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div id="orbField"></div>
+
+<!-- ==================== LOGIN ==================== -->
+<div class="screen" id="loginScreen">
+  <div class="glass rgb-anim login-card">
+    <div class="brand-mark">VS</div>
+    <h1>VOID SATAN SENSI</h1>
+    <p class="sub">Acceso restringido · calibrador de sensibilidad</p>
+    <form id="loginForm" autocomplete="off">
+      <div class="field">
+        <label for="user">Usuario</label>
+        <input id="user" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="usuario">
+      </div>
+      <div class="field">
+        <label for="pass">Contraseña</label>
+        <input id="pass" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn" type="submit">Entrar</button>
+      <div class="login-err" id="loginErr" role="alert"></div>
+    </form>
+    <div class="login-security-note">
+      <b style="color:var(--ink);">Nota de seguridad honesta:</b> este acceso es solo una pantalla local para uso personal, no un sistema de autenticación real. El usuario y la contraseña están escritos dentro del propio código de la página, así que cualquiera que inspeccione el archivo puede leerlos. No protege datos sensibles ni sustituye un backend con autenticación real.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== APP ==================== -->
+<div class="screen" id="appScreen">
+  <div class="wrap">
+    <div class="top-bar">
+      <span class="title">Void Satan Sensi v3</span>
+      <div class="top-bar-actions">
+        <button class="linklike" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div>
+      <h1 class="app-title">VOID SATAN <span>SENSI</span></h1>
+      <p class="app-sub">Calibración local basada en tu dispositivo, tu perfil y tu propio feedback</p>
+    </div>
+
+    <!-- Modo experto -->
+    <div class="glass rgb-anim">
+      <div class="expert-row">
+        <div class="expert-label">
+          <b>Modo experto</b>
+          <span>Datos detectados, parámetros internos y diferencias entre calibraciones</span>
+        </div>
+        <div class="switch" id="expertSwitch" role="switch" aria-checked="false" tabindex="0" aria-label="Activar modo experto"><div class="knob"></div></div>
+      </div>
+    </div>
+
+    <!-- Presets / perfil -->
+    <div class="glass rgb-anim preset-card">
+      <div class="preset-title"><span>Perfil de calibración</span></div>
+      <div class="preset-grid" id="presetGrid"></div>
+      <div class="custom-panel" id="customPanel">
+        <div class="custom-row"><div class="custom-row-top"><b>Estabilidad</b><span id="vEstab">50</span></div>
+          <input type="range" class="app-slider" id="sEstab" min="0" max="100" value="50">
+          <div class="app-note">Cuánto peso le da el algoritmo a evitar temblor y sobrepaso frente a velocidad pura.</div>
+        </div>
+        <div class="custom-row"><div class="custom-row-top"><b>Velocidad</b><span id="vVel">50</span></div>
+          <input type="range" class="app-slider" id="sVel" min="0" max="100" value="50">
+        </div>
+        <div class="custom-row"><div class="custom-row-top"><b>Agresividad</b><span id="vAgr">50</span></div>
+          <input type="range" class="app-slider" id="sAgr" min="0" max="100" value="50">
+        </div>
+        <div class="custom-row"><div class="custom-row-top"><b>Control</b><span id="vCtrl">50</span></div>
+          <input type="range" class="app-slider" id="sCtrl" min="0" max="100" value="50">
+        </div>
+        <div class="custom-row"><div class="custom-row-top"><b>Drag corto ↔ Drag largo</b><span id="vDrag">Medio</span></div>
+          <input type="range" class="app-slider" id="sDrag" min="-100" max="100" value="0">
+        </div>
+        <div class="app-note"><b>Importante:</b> estos controles son propios de esta app, NO son ajustes de iOS. Solo definen cómo se calculan los números de Free Fire y el tamaño del botón de disparo de abajo.</div>
+      </div>
+    </div>
+
+    <!-- Calibration process -->
+    <div class="glass rgb-anim process-card" id="processCard">
+      <div class="process-step" data-step="1"><span class="step-dot"></span><span>Detectando dispositivo…</span></div>
+      <div class="process-step" data-step="2"><span class="step-dot"></span><span>Analizando pantalla y viewport…</span></div>
+      <div class="process-step" data-step="3"><span class="step-dot"></span><span>Estimando frecuencia de refresco…</span></div>
+      <div class="process-step" data-step="4"><span class="step-dot"></span><span>Construyendo perfil táctil…</span></div>
+      <div class="process-step" data-step="5"><span class="step-dot"></span><span>Calculando curva de sensibilidad…</span></div>
+      <div class="process-step" data-step="6"><span class="step-dot"></span><span>Ajustando botón de disparo…</span></div>
+      <div class="process-step" data-step="7"><span class="step-dot"></span><span>Generando configuración iOS…</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden" style="display:flex; flex-direction:column; gap:14px;">
+
+      <div class="glass rgb-anim result-head">
+        <div class="ring-wrap">
+          <svg width="88" height="88" viewBox="0 0 92 92">
+            <circle cx="46" cy="46" r="40" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="6"/>
+            <circle id="confCircle" cx="46" cy="46" r="40" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" transform="rotate(-90 46 46)"/>
+          </svg>
+          <div class="ring-label"><b id="confPct">–</b><span>confianza</span></div>
+        </div>
+        <div class="device-status" id="deviceStatus">—</div>
+        <div class="device-name" id="deviceName">—</div>
+        <div class="device-meta" id="deviceMeta">—</div>
+        <div class="profile-chip" id="profileChip">CALIBRACIÓN #01</div>
+      </div>
+
+      <!-- 1. FREE FIRE -->
+      <details class="glass rgb-anim mega-acc" open>
+        <summary>
+          <div class="mega-acc-title"><span class="num">1</span>
+            <div>SENSIBILIDAD FREE FIRE<div class="mega-acc-sub">Curva coherente entre categorías, calculada a partir de tu perfil</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body">
+          <div id="ffList"></div>
+          <div class="info-note">Escala 0–100, la misma que usan los deslizadores dentro de Free Fire → Configuración → Sensibilidad. Garena puede modificar esta escala en futuras actualizaciones del juego: si tu pantalla de sensibilidad ya no llega a 100, usa estos números como proporción relativa entre categorías, no como valores absolutos.</div>
+        </div>
+      </details>
+
+      <!-- 2. BOTÓN DE DISPARO -->
+      <details class="glass rgb-anim mega-acc">
+        <summary>
+          <div class="mega-acc-title"><span class="num">2</span>
+            <div>BOTÓN DE DISPARO<div class="mega-acc-sub">Tamaño y zona de arrastre, ligados al mismo modelo</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body">
+          <div class="section-path">Free Fire → Configuración → HUD → Editar HUD → Botón de disparo</div>
+          <div id="fireButtonBox"></div>
+          <div id="fireButtonWhy" class="info-note"></div>
+          <div class="hud-mock" id="hudMock"></div>
+          <div class="app-note">La zona punteada marca dónde suele empezar el arrastre desde el botón de disparo — no existe una posición universal perfecta, es una referencia según tu perfil y el tamaño de tu pantalla.</div>
+        </div>
+      </details>
+
+      <!-- 3. DIAGNÓSTICO DE DRAG -->
+      <details class="glass rgb-anim mega-acc">
+        <summary>
+          <div class="mega-acc-title"><span class="num">3</span>
+            <div>ANÁLISIS DE ESTABILIDAD DEL DRAG<div class="mega-acc-sub">Dinos qué sientes y ajustamos el perfil, sin partir de cero</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body">
+          <div class="section-title"><h2>¿Qué problema notas al arrastrar?</h2></div>
+          <div class="diag-grid" id="diagGrid"></div>
+          <button class="btn" id="applyDiagBtn" style="margin-top:4px;">MEJORAR ESTA CONFIGURACIÓN</button>
+          <div class="app-note">Esto no genera una configuración nueva desde cero: aplica un ajuste incremental sobre la que ya tienes (por ejemplo, General y Botón suben o bajan unos puntos), según el problema elegido.</div>
+
+          <div class="section-title" style="margin-top:10px;"><h2>¿Cómo se comportó en partida?</h2></div>
+          <div class="feedback-row" id="feedbackRow"></div>
+        </div>
+      </details>
+
+      <!-- 4. iOS -->
+      <details class="glass rgb-anim mega-acc">
+        <summary>
+          <div class="mega-acc-title"><span class="num">4</span>
+            <div>CONFIGURACIÓN INTERNA DE iOS<div class="mega-acc-sub">Ajustes → Accesibilidad — no sustituye la sensibilidad de Free Fire</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body">
+          <div class="info-note"><b>FREE FIRE SENSIBILIDAD ≠ AJUSTES TÁCTILES DE iOS.</b> Lo de abajo controla cómo el sistema interpreta tus toques antes de que lleguen al juego; no es un "boost" mágico de sensibilidad ni garantiza mejores disparos.</div>
+
+          <details class="cat-acc"><summary><div><div class="cat-acc-name"><i>●</i>Tocar</div><div class="cat-acc-path">Accesibilidad → Tocar</div></div>
+            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <div class="cat-acc-body"><div id="touchMainList"></div></div></details>
+
+          <details class="cat-acc"><summary><div><div class="cat-acc-name"><i>●</i>Reacción táctil</div><div class="cat-acc-path">Tocar → Reacción táctil</div></div>
+            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <div class="cat-acc-body"><div id="hapticList"></div></div></details>
+
+          <details class="cat-acc"><summary><div><div class="cat-acc-name"><i>●</i>Adaptaciones táctiles</div><div class="cat-acc-path">Tocar → Adaptaciones táctiles · solo si notas toques fantasma</div></div>
+            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <div class="cat-acc-body"><div id="accomList"></div></div></details>
+
+          <details class="cat-acc"><summary><div><div class="cat-acc-name"><i>●</i>AssistiveTouch</div><div class="cat-acc-path">Tocar → AssistiveTouch · solo accesibilidad / puntero</div></div>
+            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <div class="cat-acc-body"><div id="atList"></div></div></details>
+
+          <details class="cat-acc"><summary><div><div class="cat-acc-name"><i>●</i>Control por botón</div><div class="cat-acc-path">Accesibilidad → Control por botón · NO recomendado para jugar</div></div>
+            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <div class="cat-acc-body"><div id="switchList"></div></div></details>
+
+          <details class="cat-acc"><summary><div><div class="cat-acc-name"><i>●</i>Pantalla y tamaño de texto</div><div class="cat-acc-path">Accesibilidad → Pantalla y tamaño de texto · visual, no afecta sensibilidad</div></div>
+            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <div class="cat-acc-body"><div id="displayList"></div></div></details>
+
+          <details class="cat-acc"><summary><div><div class="cat-acc-name"><i>●</i>Movimiento</div><div class="cat-acc-path">Accesibilidad → Movimiento</div></div>
+            <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+            <div class="cat-acc-body"><div id="motionList"></div></div></details>
+        </div>
+      </details>
+
+      <!-- 5. HISTORIAL -->
+      <details class="glass rgb-anim mega-acc">
+        <summary>
+          <div class="mega-acc-title"><span class="num">5</span>
+            <div>HISTORIAL<div class="mega-acc-sub">Tus últimas calibraciones en este dispositivo</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body"><div id="historyList"></div></div>
+      </details>
+
+      <!-- 6. PERFILES GUARDADOS -->
+      <details class="glass rgb-anim mega-acc">
+        <summary>
+          <div class="mega-acc-title"><span class="num">6</span>
+            <div>PERFILES GUARDADOS<div class="mega-acc-sub">Guarda, renombra, duplica y vuelve a cargar configuraciones</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body">
+          <div class="save-row"><input type="text" id="saveNameInput" placeholder="Nombre del perfil, p. ej. iPhone principal" maxlength="40"><button class="btn small" id="saveProfileBtn" style="width:auto; margin:0; padding:0 16px;">Guardar</button></div>
+          <div id="profilesList" style="margin-top:8px;"></div>
+        </div>
+      </details>
+
+      <!-- 7. COMPARADOR -->
+      <details class="glass rgb-anim mega-acc">
+        <summary>
+          <div class="mega-acc-title"><span class="num">7</span>
+            <div>COMPARAR PERFILES<div class="mega-acc-sub">Perfil A frente a Perfil B</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body">
+          <select class="compare-select" id="compareA"></select>
+          <select class="compare-select" id="compareB"></select>
+          <div id="compareOut"></div>
+        </div>
+      </details>
+
+      <!-- 8. EXPERTO -->
+      <details class="glass rgb-anim mega-acc" id="expertSection" style="display:none;">
+        <summary>
+          <div class="mega-acc-title"><span class="num">8</span>
+            <div>DATOS TÉCNICOS<div class="mega-acc-sub">Lo que Safari realmente expone, y lo que no</div></div>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="mega-acc-body">
+          <div class="section-title"><h2>Detección cruda</h2></div>
+          <div class="kv-grid" id="expertDetect"></div>
+          <div class="section-title" style="margin-top:6px;"><h2>Parámetros internos del algoritmo</h2></div>
+          <div class="kv-grid" id="expertParams"></div>
+          <div class="section-title" style="margin-top:6px;"><h2>Cómo se formó la confianza</h2></div>
+          <div id="expertConfidence" style="font-size:11.5px; color:var(--ink-dim); line-height:1.7;"></div>
+          <div class="section-title" style="margin-top:6px;"><h2>Diferencia vs. calibración anterior</h2></div>
+          <div class="kv-grid" id="expertDiff"></div>
+        </div>
+      </details>
+
+      <div class="actions-row">
+        <button class="btn" id="copyAllBtn" style="flex:1;">Copiar configuración</button>
+        <button class="btn ghost" id="exportBtn" style="flex:1;">Exportar JSON</button>
+      </div>
+      <div class="actions-row">
+        <button class="btn ghost" id="importBtn" style="flex:1;">Importar JSON</button>
+        <input type="file" id="importFile" accept="application/json" class="hidden">
+        <button class="btn ghost" id="recalBtn" style="flex:1;">↻ Recalibrar</button>
+      </div>
+
+      <div class="glass rgb-anim explain-card">
+        <h2>Cómo funciona esta calibración</h2>
+        <ol>
+          <li><b>Datos usados:</b> resolución lógica y física, devicePixelRatio, viewport visual, orientación, maxTouchPoints, user agent/plataforma, modo standalone y una frecuencia de refresco <i>estimada</i> con requestAnimationFrame. Lo que Safari no expone se marca como no disponible, nunca se inventa.</li>
+          <li><b>Modelo de iPhone:</b> se compara tu resolución lógica contra una tabla de resoluciones conocidas. Si varios modelos comparten exactamente la misma resolución (por ejemplo iPhone X, XS, 11 Pro, 12 mini y 13 mini), se muestra "familia de dispositivos compatible", no un modelo único inventado.</li>
+          <li><b>Perfil:</b> tú eliges un preset (Control, Equilibrado, Agresivo, Precisión, Drag estable, Drag rápido) o personalizas Estabilidad / Velocidad / Agresividad / Control / Drag corto-largo. Estos cuatro-cinco números son la base de todo lo demás.</li>
+          <li><b>Curva de sensibilidad:</b> "General" es el valor base; Punto rojo, 2X, 4X, Francotirador y Vista libre se derivan de General mediante multiplicadores que dependen de Estabilidad y Control — por eso están relacionados entre sí en vez de salir cada uno por su cuenta.</li>
+          <li><b>Botón de disparo:</b> nace del mismo perfil (velocidad, agresividad, estabilidad, control, estilo de drag) y del tamaño real de tu pantalla, no de una tabla fija Alta/Media/Baja.</li>
+          <li><b>Recalibrar:</b> no usa Math.random. Recorre una secuencia fija ligada al número de calibración, y combina la gama del dispositivo, una "huella" estable de esa unidad de pantalla y esa secuencia — así el resultado varía de forma perceptible pero reproducible, no aleatoria.</li>
+          <li><b>Diagnóstico de drag y feedback:</b> cada problema que eliges (mira que tiembla, se pasa, sube muy rápido, etc.) aplica un ajuste incremental sobre tu configuración actual, no una nueva desde cero. Las calibraciones siguientes parten de ahí.</li>
+          <li><b>Confianza:</b> refleja cuántos datos reales se pudieron obtener y qué tan bien coincide tu resolución con dispositivos conocidos — no es un número decorativo. Actívalo en Modo experto para ver el desglose exacto.</li>
+          <li><b>Límite honesto:</b> ninguna configuración puede garantizar headshots ni precisión perfecta. La técnica de arrastre, la funda, el protector de pantalla y la condición de tu dedo también influyen. Esta herramienta optimiza dispositivo + perfil + objetivo + botón + tu feedback, no reemplaza la práctica.</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer class="app-footer">Void Satan Sensi · calibrador local, sin conexión a servidores · todos los cálculos ocurren en tu teléfono</footer>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<button class="music-toggle muted" id="musicToggle" title="Música" aria-label="Activar o silenciar música">♪</button>
+<audio id="bgMusic" preload="auto"></audio>
+
+<script>
+(function(){
+  "use strict";
+
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============================================================
+     UTILITIES
+     ============================================================ */
+  function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+  function round(v){ return Math.round(v); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove('show'); }, 1700);
+  }
+
+  function copyText(text, btnEl){
+    function done(ok){
+      if(!btnEl) return;
+      btnEl.classList.toggle('copied', ok);
+      var prev = btnEl.textContent;
+      btnEl.textContent = ok ? '✓' : prev;
+      setTimeout(function(){ btnEl.textContent = prev; btnEl.classList.remove('copied'); }, 1100);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){done(true); toast('Copiado');}).catch(function(){done(false); toast('No se pudo copiar');});
+    } else {
+      try{
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        done(true); toast('Copiado');
+      }catch(e){ done(false); toast('No se pudo copiar'); }
+    }
+  }
+
+  function safeLS(){
+    try{ var k='__vss_test__'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }
+    catch(e){ return false; }
+  }
+  var LS_OK = safeLS();
+  function lsGet(key, fallback){
+    if(!LS_OK) return fallback;
+    try{ var v = localStorage.getItem(key); return v===null ? fallback : JSON.parse(v); }catch(e){ return fallback; }
+  }
+  function lsSet(key, val){
+    if(!LS_OK) return false;
+    try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; }
+  }
+
+  // Fill visual de un <input type=range> disabled, imitando la barrita de iOS
+  // (izquierda rellena, derecha vacía). Se recalcula al insertar en el DOM.
+  function paintRefSlider(el){
+    var min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
+    var pct = clamp(((val-min)/(max-min))*100, 0, 100);
+    el.style.background = 'linear-gradient(90deg, #fff 0%, #fff '+pct+'%, rgba(255,255,255,0.12) '+pct+'%, rgba(255,255,255,0.12) 100%)';
+    el.style.setProperty('--fill', pct+'%');
+    // WebKit no permite estilizar el track vía background del propio track pseudo-elemento con JS,
+    // así que usamos un truco: coloreamos el propio input con el gradiente y dejamos el
+    // ::-webkit-slider-runnable-track transparente para que se vea el gradiente de fondo del input.
+  }
+  function repaintAllRefSliders(root){
+    Array.prototype.slice.call((root||document).querySelectorAll('.ref-slider')).forEach(paintRefSlider);
+  }
+
+  /* ============================================================
+     MUSIC — playlist en rotación, con fallback silencioso
+     ============================================================ */
+  var PLAYLIST = ['entrada.mp3', 'cancion2.mp3', 'cancion3.mp3', 'cancion4.mp3'];
+  var TARGET_VOL = 0.5, FADE_MS = 450;
+  var bgMusic = document.getElementById('bgMusic');
+  var musicToggle = document.getElementById('musicToggle');
+  var musicWanted = true;
+  var fadeTimer = null;
+  var currentTrackIdx = 0;
+
+  function nextTrackIndexOnLoad(){
+    var last = parseInt(lsGet('vss_track_idx', -1), 10);
+    if(isNaN(last)) last = -1;
+    var next = (last + 1) % PLAYLIST.length;
+    lsSet('vss_track_idx', next);
+    return next;
+  }
+  currentTrackIdx = nextTrackIndexOnLoad();
+
+  function fadeTo(target, ms, done){
+    try{
+      clearInterval(fadeTimer);
+      var steps = 14, i = 0, start = bgMusic.volume;
+      fadeTimer = setInterval(function(){
+        i++; bgMusic.volume = clamp(start + (target-start)*(i/steps), 0, 1);
+        if(i>=steps){ clearInterval(fadeTimer); if(done) done(); }
+      }, ms/steps);
+    }catch(e){ if(done) done(); }
+  }
+  function loadTrack(idx, andPlay){
+    try{
+      currentTrackIdx = idx; bgMusic.src = PLAYLIST[idx]; bgMusic.currentTime = 0;
+      if(andPlay){
+        bgMusic.volume = 0;
+        var p = bgMusic.play();
+        var onReady = function(){ fadeTo(TARGET_VOL, FADE_MS); };
+        if(p && p.then){ p.then(onReady).catch(function(){ musicToggle.classList.add('muted'); }); } else { onReady(); }
+      }
+    }catch(e){ /* sin audio: la app sigue funcionando igual */ }
+  }
+  if(bgMusic){ bgMusic.addEventListener('ended', function(){ loadTrack((currentTrackIdx+1)%PLAYLIST.length, true); }); }
+  function playMusic(){ if(!musicWanted || !bgMusic) return; try{ loadTrack(currentTrackIdx, true); musicToggle.classList.remove('muted'); }catch(e){} }
+  function pauseMusic(){ try{ if(!bgMusic || bgMusic.paused) return; fadeTo(0, 250, function(){ bgMusic.pause(); }); }catch(e){} }
+  function resumeMusic(){ try{ if(!bgMusic || !bgMusic.paused || !musicWanted) return; var p=bgMusic.play(); var onReady=function(){fadeTo(TARGET_VOL,FADE_MS);}; if(p&&p.then){p.then(onReady).catch(function(){});}else{onReady();} }catch(e){} }
+  function stopMusic(soft){ try{ if(!bgMusic) return; if(soft){ pauseMusic(); return; } clearInterval(fadeTimer); bgMusic.pause(); bgMusic.currentTime=0; bgMusic.volume=TARGET_VOL; }catch(e){} }
+  if(musicToggle){
+    musicToggle.addEventListener('click', function(){
+      if(!bgMusic) return;
+      if(bgMusic.paused){ musicWanted=true; if(!bgMusic.src){ loadTrack(currentTrackIdx,true);} else { resumeMusic(); } musicToggle.classList.remove('muted'); }
+      else { musicWanted=false; pauseMusic(); musicToggle.classList.add('muted'); }
+    });
+  }
+
+  /* ============================================================
+     ORB FIELD (ambiente, no gyroscope, respeta reduced-motion / background)
+     ============================================================ */
+  function buildOrbs(){
+    var field = document.getElementById('orbField');
+    var count = reducedMotion ? 0 : 12;
+    var classes = ['c1','c2','c3'];
+    for(var i=0;i<count;i++){
+      var o = document.createElement('div');
+      var isBig = Math.random() < 0.3;
+      o.className = 'orb ' + classes[i % classes.length] + (isBig?' big':'');
+      var size = isBig ? (90+Math.random()*130) : (16+Math.random()*46);
+      o.style.width = size+'px'; o.style.height = size+'px';
+      o.style.left = (Math.random()*100)+'vw'; o.style.top = (Math.random()*100)+'vh';
+      o.style.setProperty('--dx1', (Math.random()*70-35)+'vw');
+      o.style.setProperty('--dy1', (Math.random()*55-20)+'vh');
+      o.style.setProperty('--dx2', (Math.random()*70-35)+'vw');
+      o.style.setProperty('--dy2', (Math.random()*70-45)+'vh');
+      o.style.animationDuration = (26+Math.random()*34)+'s';
+      o.style.animationDelay = (Math.random()*-40)+'s';
+      o.style.opacity = (isBig?(0.10+Math.random()*0.12):(0.22+Math.random()*0.28)).toFixed(2);
+      field.appendChild(o);
+    }
+  }
+  buildOrbs();
+  document.addEventListener('visibilitychange', function(){
+    var field = document.getElementById('orbField');
+    if(field) field.classList.toggle('paused', document.hidden);
+    document.body.classList.toggle('bg-paused', document.hidden);
+    if(document.hidden){ stopMusic(true); } else if(musicWanted){ resumeMusic(); }
+  });
+
+  /* ============================================================
+     LOGIN
+     ============================================================ */
+  var LOGIN_USER = 'void';
+  var LOGIN_PASS = '5630';
+  var loginForm = document.getElementById('loginForm');
+  var loginScreen = document.getElementById('loginScreen');
+  var appScreen = document.getElementById('appScreen');
+  var loginErr = document.getElementById('loginErr');
+
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var u = document.getElementById('user').value.trim();
+    var p = document.getElementById('pass').value.trim();
+    if(u === LOGIN_USER && p === LOGIN_PASS){
+      loginErr.textContent = '';
+      loginScreen.style.display = 'none';
+      appScreen.style.display = 'flex';
+      initAppOnce();
+      startCalibration();
+      playMusic();
+    } else {
+      loginErr.textContent = 'Usuario o contraseña incorrectos.';
+    }
+  });
+  document.getElementById('logoutBtn').addEventListener('click', function(){
+    appScreen.style.display = 'none';
+    loginScreen.style.display = 'flex';
+    document.getElementById('pass').value = '';
+    document.getElementById('results').classList.add('hidden');
+    resetProcessUI();
+    stopMusic();
+  });
+
+  /* ============================================================
+     DEVICE DETECTION
+     ============================================================ */
+  // Familias de resolución lógica conocidas. Varias familias comparten
+  // exactamente la misma resolución+DPR — eso se declara explícitamente
+  // en vez de fingir que se identificó un modelo único.
+  var KNOWN_FAMILIES = [
+    {w:320,h:480,dpr:2,name:'iPhone 4 / 4s'},
+    {w:320,h:568,dpr:2,name:'iPhone 5 / 5s / SE (1.ª gen)'},
+    {w:375,h:667,dpr:2,name:'iPhone 6 / 6s / 7 / 8 · SE (2.ª/3.ª gen)'},
+    {w:414,h:736,dpr:3,name:'iPhone 6 Plus / 6s Plus / 7 Plus / 8 Plus'},
+    {w:375,h:812,dpr:3,name:'iPhone X / XS / 11 Pro · 12 mini / 13 mini'},
+    {w:414,h:896,dpr:2,name:'iPhone XR / 11'},
+    {w:414,h:896,dpr:3,name:'iPhone XS Max / 11 Pro Max'},
+    {w:390,h:844,dpr:3,name:'iPhone 12 / 12 Pro · 13 / 13 Pro · 14'},
+    {w:428,h:926,dpr:3,name:'iPhone 12 Pro Max · 13 Pro Max · 14 Plus'},
+    {w:393,h:852,dpr:3,name:'iPhone 14 Pro · 15 / 15 Pro · 16'},
+    {w:430,h:932,dpr:3,name:'iPhone 14 Pro Max · 15 Plus / 15 Pro Max · 16 Plus'},
+    {w:402,h:874,dpr:3,name:'iPhone 16 Pro'},
+    {w:440,h:956,dpr:3,name:'iPhone 16 Pro Max'}
+  ];
+  function matchDevice(w,h,dpr){
+    var best=null, bestScore=-1, tiesAtBest=0;
+    KNOWN_FAMILIES.forEach(function(d){
+      var wm = Math.min(w,h)===Math.min(d.w,d.h) ? 1:0;
+      var hm = Math.max(w,h)===Math.max(d.w,d.h) ? 1:0;
+      var dm = d.dpr===dpr ? 1:0;
+      var score = wm+hm+dm;
+      if(score>bestScore){ bestScore=score; best=d; tiesAtBest=1; }
+      else if(score===bestScore && score>0){ tiesAtBest++; }
+    });
+    return {device:best, matchScore:bestScore, ties:tiesAtBest};
+  }
+  function measureRefreshRate(cb){
+    var frames=0, start=null, last=null, deltas=[];
+    function step(ts){
+      if(start===null){ start=ts; last=ts; } else { deltas.push(ts-last); last=ts; }
+      frames++;
+      if(ts-start < 400){ requestAnimationFrame(step); }
+      else{
+        if(deltas.length < 3){ cb(null); return; }
+        deltas.sort(function(a,b){return a-b;});
+        var mid = deltas[Math.floor(deltas.length/2)];
+        var fps = 1000/mid;
+        var snapped = fps>100 ? 120 : (fps>80 ? 90 : 60);
+        cb(snapped);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+  function detectDevice(){
+    var d = {};
+    d.screenW = screen.width||0; d.screenH = screen.height||0;
+    d.innerW = window.innerWidth||0; d.innerH = window.innerHeight||0;
+    d.dpr = window.devicePixelRatio||1;
+    d.vvW = window.visualViewport ? Math.round(window.visualViewport.width) : d.innerW;
+    d.vvH = window.visualViewport ? Math.round(window.visualViewport.height) : d.innerH;
+    d.orientation = (screen.orientation && screen.orientation.type) || (Math.abs(window.orientation||0)===90 ? 'landscape':'portrait');
+    d.maxTouchPoints = navigator.maxTouchPoints||0;
+    d.userAgent = navigator.userAgent||'';
+    d.platform = navigator.platform||'';
+    d.standalone = ('standalone' in navigator) ? !!navigator.standalone : false;
+    d.displayModeStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    d.hasFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+    d.isIOS = /iPhone|iPad|iPod/.test(d.userAgent) && !window.MSStream;
+    return d;
+  }
+  // Hash estable (no aleatorio): representa que la sensibilidad táctil real
+  // varía ligeramente entre unidades físicas del mismo modelo. Determinista
+  // para este teléfono concreto; no se recalcula distinto al recargar.
+  function unitFingerprint(d){
+    var str = (d.userAgent||'')+'|'+(d.platform||'')+'|'+d.screenW+'x'+d.screenH+'|'+d.dpr+'|'+d.maxTouchPoints;
+    var h = 5381;
+    for(var i=0;i<str.length;i++){ h = ((h*33) ^ str.charCodeAt(i))>>>0; }
+    return h;
+  }
+
+  /* ============================================================
+     PERFILES / PRESETS — cada uno define {estabilidad,velocidad,agresividad,control,drag}
+     drag: -100 (drag muy corto) .. 0 (medio) .. 100 (drag muy largo)
+     ============================================================ */
+  var PRESETS = [
+    {id:'control',    name:'Control',       hint:'Máxima estabilidad, giros lentos',      vals:{estab:82,vel:30,agr:22,ctrl:80,drag:-15}},
+    {id:'equilibrado', name:'Equilibrado',  hint:'Balance entre velocidad y control',      vals:{estab:55,vel:52,agr:48,ctrl:55,drag:0}},
+    {id:'agresivo',    name:'Agresivo',     hint:'Giros rápidos para combate cercano',     vals:{estab:28,vel:82,agr:85,ctrl:30,drag:35}},
+    {id:'precision',   name:'Precisión',    hint:'Prioriza cabeza a media/larga distancia',vals:{estab:70,vel:40,agr:30,ctrl:85,drag:-30}},
+    {id:'drag_estable',name:'Drag estable', hint:'Arrastre suave, sin sobrepaso',          vals:{estab:88,vel:35,agr:25,ctrl:65,drag:-45}},
+    {id:'drag_rapido', name:'Drag rápido',  hint:'Arrastre corto y explosivo',             vals:{estab:35,vel:78,agr:70,ctrl:35,drag:60}},
+    {id:'personalizado', name:'Personalizado', hint:'Ajusta tú los cinco parámetros',       vals:null}
+  ];
+  var activePresetId = lsGet('vss_preset', 'equilibrado');
+  var customVals = lsGet('vss_custom', {estab:50,vel:50,agr:50,ctrl:50,drag:0});
+  // Ajuste acumulado por feedback / diagnóstico de drag — persiste entre recalibraciones
+  // (el sistema "aprende" en vez de partir de cero cada vez).
+  var feedbackAdjust = lsGet('vss_feedback_adjust', {estab:0,vel:0,agr:0,ctrl:0,drag:0,general:0,button:0});
+
+  function currentProfileVals(){
+    var base = (activePresetId === 'personalizado') ? customVals : PRESETS.filter(function(p){return p.id===activePresetId;})[0].vals;
+    return {
+      estab: clamp(base.estab + feedbackAdjust.estab, 0, 100),
+      vel:   clamp(base.vel   + feedbackAdjust.vel,   0, 100),
+      agr:   clamp(base.agr   + feedbackAdjust.agr,   0, 100),
+      ctrl:  clamp(base.ctrl  + feedbackAdjust.ctrl,  0, 100),
+      drag:  clamp(base.drag  + feedbackAdjust.drag, -100, 100)
+    };
+  }
+
+  function renderPresetGrid(){
+    var grid = document.getElementById('presetGrid');
+    grid.innerHTML = PRESETS.map(function(p){
+      return '<button class="preset-btn'+(p.id===activePresetId?' active':'')+'" data-id="'+p.id+'">'+
+        '<b>'+p.name.toUpperCase()+'</b><span>'+p.hint+'</span></button>';
+    }).join('');
+    Array.prototype.slice.call(grid.querySelectorAll('.preset-btn')).forEach(function(btn){
+      btn.addEventListener('click', function(){
+        activePresetId = btn.getAttribute('data-id');
+        lsSet('vss_preset', activePresetId);
+        renderPresetGrid();
+        document.getElementById('customPanel').classList.toggle('open', activePresetId==='personalizado');
+        calibrationIteration++;
+        startCalibration();
+      });
+    });
+    document.getElementById('customPanel').classList.toggle('open', activePresetId==='personalizado');
+  }
+  function bindCustomSliders(){
+    var map = [['sEstab','vEstab','estab',false],['sVel','vVel','vel',false],['sAgr','vAgr','agr',false],['sCtrl','vCtrl','ctrl',false],['sDrag','vDrag','drag',true]];
+    map.forEach(function(m){
+      var input = document.getElementById(m[0]), label = document.getElementById(m[1]);
+      input.value = customVals[m[2]];
+      label.textContent = m[3] ? dragLabel(customVals[m[2]]) : customVals[m[2]];
+      input.addEventListener('input', function(){
+        customVals[m[2]] = parseInt(input.value,10);
+        label.textContent = m[3] ? dragLabel(customVals[m[2]]) : customVals[m[2]];
+      });
+      input.addEventListener('change', function(){
+        lsSet('vss_custom', customVals);
+        calibrationIteration++;
+        startCalibration();
+      });
+    });
+  }
+  function dragLabel(v){
+    if(v <= -60) return 'Muy corto'; if(v <= -20) return 'Corto';
+    if(v < 20) return 'Medio'; if(v < 60) return 'Largo'; return 'Muy largo';
+  }
+
+  /* ============================================================
+     CALIBRATION ENGINE — determinista, sin Math.random en el cálculo
+     ============================================================ */
+  // Secuencia amplia y fija para la variación al pulsar Recalibrar.
+  // No es aleatoria: recorre esta lista según el número de calibración.
+  var RECAL_PATTERN = [0,7,-4,9,-8,3,-10,5,-2,8,-6,1,10,-9,4,-1,6,-3,2,-7];
+  var DEVICE_WEIGHT = 0.35, UNIT_WEIGHT = 0.12, RECAL_WEIGHT = 0.30, PROFILE_WEIGHT = 0.55;
+
+  // Rango absoluto [min,max] por categoría — el ancho de banda completo que
+  // puede alcanzar esa categoría en cualquier perfil.
+  var FF_ABS_RANGE = {
+    general:  [55,189], redDot:[50,175], scope2x:[38,145],
+    scope4x:[30,124], sniper:[15,80], freeLook:[55,189]
+  };
+  var FF_LABELS = {
+    general:{label:'General', hint:'Movimiento de cámara sin mira'},
+    redDot:{label:'Punto rojo', hint:'Mira sin aumento'},
+    scope2x:{label:'Mira 2X', hint:'Aumento bajo, media distancia'},
+    scope4x:{label:'Mira 4X', hint:'Aumento medio, media-larga distancia'},
+    sniper:{label:'Francotirador (AWM)', hint:'Aumento alto, precisión'},
+    freeLook:{label:'Vista libre / Cámara', hint:'Mirar alrededor sin apuntar'}
+  };
+
+  function deviceScoreFor(d){
+    var w = Math.max(d.screenW,d.screenH)||800, h = Math.min(d.screenW,d.screenH)||400;
+    var diag = Math.sqrt(w*w+h*h);
+    var diagScore = clamp((diag-660)/(1000-660), 0, 1);
+    var dprScore = clamp((d.dpr-2)/(3-2), 0, 1);
+    var refreshScore = d.refreshRate===null ? 0.35 : (d.refreshRate>=110 ? 1 : (d.refreshRate>=85 ? 0.55 : 0));
+    var touchScore = d.maxTouchPoints>=5 ? 1 : 0.5;
+    return clamp(diagScore*0.35 + dprScore*0.25 + refreshScore*0.30 + touchScore*0.10, 0, 1);
+  }
+
+  /* --- SENSITIVITY MODEL ------------------------------------------------
+     "general" es el valor base; el resto de categorías son multiplicadores
+     de general en función de Estabilidad y Control del perfil — así están
+     matemáticamente relacionadas, no calculadas cada una por su cuenta. */
+  function ratiosFor(profile){
+    var e = profile.estab/100, c = profile.ctrl/100, v = profile.vel/100;
+    return {
+      general: 1,
+      redDot:  clamp(0.94 - 0.08*e, 0.55, 1),
+      scope2x: clamp(0.80 - 0.16*e - 0.08*c, 0.35, 0.95),
+      scope4x: clamp(0.64 - 0.18*e - 0.12*c, 0.22, 0.85),
+      sniper:  clamp(0.42 - 0.14*c - 0.06*e, 0.14, 0.65),
+      freeLook:clamp(1.04 + 0.10*v - 0.06*e, 0.60, 1.25)
+    };
+  }
+  function generalIntensity(profile, deviceScore, unitVar, recalNorm){
+    // Base 0..1 a partir de velocidad/agresividad del perfil.
+    var profileNorm = clamp((profile.vel*0.55 + profile.agr*0.45)/100, 0, 1);
+    var offset = (profileNorm-0.5)*2*PROFILE_WEIGHT
+               + (deviceScore-0.5)*2*DEVICE_WEIGHT
+               + unitVar*UNIT_WEIGHT
+               + recalNorm*RECAL_WEIGHT;
+    return clamp(0.5 + offset*0.5, 0, 1);
+  }
+  function calcFreeFire(profile, deviceScore, unitVar, recalNorm){
+    var intensity = generalIntensity(profile, deviceScore, unitVar, recalNorm);
+    var ratios = ratiosFor(profile);
+    var out = {};
+    Object.keys(FF_ABS_RANGE).forEach(function(key){
+      var range = FF_ABS_RANGE[key], min = range[0], max = range[1];
+      var t = clamp(intensity * ratios[key], 0, 1);
+      out[key] = clamp(round(min + (max-min)*t), min, max) + (feedbackAdjust.general||0);
+      out[key] = clamp(out[key], min, max);
+    });
+    return {values: out, intensity: intensity, ratios: ratios};
+  }
+
+  /* --- FIRE BUTTON MODEL --------------------------------------------- */
+  // Escala 40-60 (misma escala del editor de HUD de Free Fire). Nace del
+  // mismo perfil: más agresividad/velocidad => botón más chico (más pantalla
+  // libre, toques más rápidos); más estabilidad/control => botón más grande
+  // (más margen para no fallar el inicio del arrastre). El estilo de drag
+  // (corto/largo) desplaza además el rango aceptable, no solo el punto medio.
+  function calcFireButton(profile, deviceScore, recalNorm){
+    var speedPull = (profile.vel*0.5 + profile.agr*0.5)/100;   // 0..1, empuja hacia abajo
+    var stabPull  = (profile.estab*0.5 + profile.ctrl*0.5)/100; // 0..1, empuja hacia arriba
+    var base = 50 - speedPull*9 + stabPull*9;
+    base += (deviceScore-0.5)*4;             // pantallas más grandes toleran botón algo más chico
+    base -= (profile.drag/100)*3;            // drag largo favorece botón algo más chico y más móvil
+    base += recalNorm*1.5 + (feedbackAdjust.button||0);
+    var size = clamp(round(base), 40, 60);
+    // Rango aceptable: más estrecho cuanto más extremo el perfil (más "opinión" del modelo),
+    // más ancho cuando el perfil es equilibrado.
+    var extremity = Math.abs(speedPull-stabPull);
+    var spread = clamp(round(6 - extremity*3), 2, 6);
+    return { size:size, min:clamp(size-spread,40,60), max:clamp(size+spread,40,60), spread:spread };
+  }
+
+  var HOLD_DUR = {lo:0.28, hi:0.08};
+  var IGNORE_REP = {lo:0.55, hi:0.18};
+  var GESTURE_WAIT = {lo:0.28, hi:0.06};
+  var TRACK_SPEED = {lo:25, hi:92};
+  var MOVE_TOL = {lo:16, hi:3};
+  var IDLE_OPACITY = {lo:32, hi:14};
+  var SWIPE_LABELS = ['Estándar','×2','×4','×8','×16'];
+  var SCAN_DUR = {lo:1.30, hi:0.50};
+  var LOOPS_R = {lo:2, hi:6};
+  var CURSOR_LABELS = ['Sencillo','Refinado','Preciso'];
+  var CURSOR_AMOUNT = {lo:25, hi:100};
+  var MOUSE_DELAY = {lo:1.00, hi:0.25};
+  var MOUSE_MAXSPD = {lo:30, hi:92};
+
+  function mix(range, t){ return range.lo + (range.hi-range.lo)*t; }
+
+  function calcIOS(profile, deviceScore, recalNorm){
+    // t=1 → perfil "agresivo/rápido"; t=0 → perfil "controlado/estable"
+    var t = clamp((profile.vel*0.5 + profile.agr*0.5)/100, 0, 1);
+    var jitter = recalNorm*0.06;
+    var holdDuration = clamp(+mix(HOLD_DUR, clamp(t+jitter,0,1)).toFixed(2), 0.05,0.30);
+    var ignoreRepeat = clamp(+mix(IGNORE_REP, clamp(t+jitter,0,1)).toFixed(2), 0.15,0.60);
+    var gestureWait = clamp(+mix(GESTURE_WAIT, clamp(t+jitter,0,1)).toFixed(2), 0.05,0.30);
+    var trackingSpeed = clamp(round(mix(TRACK_SPEED, t) + deviceScore*6), 5,100);
+    var movementTolerance = clamp(round(mix(MOVE_TOL, t)), 2,18);
+    var idleOpacity = clamp(round(mix(IDLE_OPACITY, t)), 10,45);
+    var swipeStepIdx = clamp(round(mix({lo:1,hi:3}, t)), 0,4);
+    var scanDuration = clamp(+mix(SCAN_DUR, t).toFixed(2), 0.30,3.00);
+    var loops = clamp(round(mix(LOOPS_R, t)), 1,20);
+    var cursorStyleIdx = clamp(round(mix({lo:2,hi:0}, t)), 0,2);
+    var cursorAmount = clamp(round(mix(CURSOR_AMOUNT, t)), 0,120);
+    var mouseInitialDelay = clamp(+mix(MOUSE_DELAY, t).toFixed(2), 0.00,3.00);
+    var mouseMaxSpeed = clamp(round(mix(MOUSE_MAXSPD, t)), 10,100);
+    return {holdDuration:holdDuration, ignoreRepeat:ignoreRepeat, gestureWait:gestureWait,
+      trackingSpeed:trackingSpeed, movementTolerance:movementTolerance, idleOpacity:idleOpacity,
+      swipeStepIdx:swipeStepIdx, swipeStepLabel:SWIPE_LABELS[swipeStepIdx], scanDuration:scanDuration,
+      loops:loops, cursorStyleIdx:cursorStyleIdx, cursorAmount:cursorAmount,
+      mouseInitialDelay:mouseInitialDelay, mouseMaxSpeed:mouseMaxSpeed};
+  }
+
+  function confidenceFor(d, matchScore, ties){
+    var score = 42;
+    var parts = [];
+    if(d.screenW && d.screenH){ score+=10; parts.push(['Resolución detectada','+10']); } else parts.push(['Resolución detectada','+0 (no disponible)']);
+    if(d.dpr){ score+=8; parts.push(['DPR disponible','+8']); }
+    if(d.refreshRate!==null){ score+=8; parts.push(['Frecuencia estimada','+8']); } else parts.push(['Frecuencia estimada','+0 (no disponible)']);
+    if(d.maxTouchPoints>=5){ score+=6; parts.push(['Multitáctil ≥5 puntos','+6']); }
+    if(d.isIOS){ score+=5; parts.push(['Plataforma iOS confirmada','+5']); }
+    var matchBonus = matchScore*4 - (ties>1 ? (ties-1)*3 : 0);
+    score += matchBonus;
+    parts.push(['Coincidencia con tabla de resoluciones', (matchBonus>=0?'+':'')+matchBonus + (ties>1 ? ' ('+ties+' familias comparten esta resolución)':'')]);
+    return {pct: clamp(round(score), 30, 97), parts: parts};
+  }
+
+  /* ============================================================
+     ORCHESTRATION
+     ============================================================ */
+  var calibrationIteration = parseInt(lsGet('vss_iteration', 0), 10) || 0;
+  var lastDetected = null, lastResult = null, prevResult = null;
+
+  var stepEls = Array.prototype.slice.call(document.querySelectorAll('.process-step'));
+  var progressFill = document.getElementById('progressFill');
+  var processCard = document.getElementById('processCard');
+  var resultsEl = document.getElementById('results');
+
+  function resetProcessUI(){
+    stepEls.forEach(function(el){ el.classList.remove('active','done'); });
+    progressFill.style.width = '0%';
+    processCard.classList.remove('hidden');
+    resultsEl.classList.add('hidden');
+  }
+  function runSteps(cb){
+    var i=0;
+    function next(){
+      if(i>0){ stepEls[i-1].classList.remove('active'); stepEls[i-1].classList.add('done'); }
+      if(i>=stepEls.length){ cb(); return; }
+      stepEls[i].classList.add('active');
+      progressFill.style.width = round(((i+1)/stepEls.length)*100)+'%';
+      i++;
+      setTimeout(next, reducedMotion ? 30 : 200);
+    }
+    next();
+  }
+
+  function startCalibration(){
+    resetProcessUI();
+    var detected = detectDevice();
+    measureRefreshRate(function(rate){
+      detected.refreshRate = rate;
+      lastDetected = detected;
+      runSteps(function(){
+        var profile = currentProfileVals();
+        var deviceScore = deviceScoreFor(detected);
+        var unitVar = ((unitFingerprint(detected) % 2001)/1000) - 1;
+        var recalRaw = RECAL_PATTERN[((calibrationIteration % RECAL_PATTERN.length)+RECAL_PATTERN.length)%RECAL_PATTERN.length];
+        var recalNorm = recalRaw/10;
+
+        var ff = calcFreeFire(profile, deviceScore, unitVar, recalNorm);
+        var button = calcFireButton(profile, deviceScore, recalNorm);
+        var ios = calcIOS(profile, deviceScore, recalNorm);
+        var match = matchDevice(Math.max(detected.screenW,detected.screenH), Math.min(detected.screenW,detected.screenH), detected.dpr);
+        var conf = confidenceFor(detected, match.matchScore, match.ties);
+
+        prevResult = lastResult;
+        lastResult = {
+          detected: detected, profile: profile, deviceScore: deviceScore, unitVar: unitVar,
+          recalNorm: recalNorm, freeFire: ff, button: button, ios: ios, match: match,
+          confidence: conf, iteration: calibrationIteration, presetId: activePresetId, ts: Date.now()
+        };
+        lsSet('vss_iteration', calibrationIteration);
+        renderResults(lastResult);
+        pushHistory(lastResult);
+        processCard.classList.add('hidden');
+        resultsEl.classList.remove('hidden');
+      });
+    });
+  }
+  document.getElementById('recalBtn').addEventListener('click', function(){
+    calibrationIteration++;
+    startCalibration();
+  });
+
+  /* ============================================================
+     DRAG DIAGNOSTIC → ajustes incrementales
+     ============================================================ */
+  var DIAG_OPTIONS = [
+    {id:'overshoot', label:'La mira se pasa demasiado', delta:{general:-6,estab:8,ctrl:4,vel:-4,button:2}},
+    {id:'undershoot', label:'La mira se queda corta', delta:{general:5,vel:4,button:-1}},
+    {id:'shake', label:'La mira tiembla', delta:{estab:12,vel:-8,agr:-6,button:3}},
+    {id:'toofast', label:'Sube demasiado rápido', delta:{vel:-10,general:-4}},
+    {id:'tooslow', label:'Sube demasiado lento', delta:{vel:9,general:4}},
+    {id:'heavy', label:'El drag se siente pesado', delta:{vel:8,button:-2}},
+    {id:'oversensitive', label:'El drag se siente demasiado sensible', delta:{vel:-9,estab:6,button:2}},
+    {id:'abrupt', label:'El primer movimiento es brusco', delta:{estab:7,vel:-5,button:2}},
+    {id:'inconsistent', label:'El movimiento es inconsistente', delta:{estab:10,ctrl:5,button:3}}
+  ];
+  var selectedDiag = null;
+  function renderDiagGrid(){
+    var grid = document.getElementById('diagGrid');
+    grid.innerHTML = DIAG_OPTIONS.map(function(o){
+      return '<button class="diag-btn" data-id="'+o.id+'">'+o.label+'</button>';
+    }).join('');
+    Array.prototype.slice.call(grid.querySelectorAll('.diag-btn')).forEach(function(btn){
+      btn.addEventListener('click', function(){
+        selectedDiag = btn.getAttribute('data-id');
+        Array.prototype.slice.call(grid.querySelectorAll('.diag-btn')).forEach(function(b){ b.classList.toggle('active', b===btn); });
+      });
+    });
+  }
+  document.getElementById('applyDiagBtn').addEventListener('click', function(){
+    if(!selectedDiag){ toast('Elige primero qué problema notas'); return; }
+    var opt = DIAG_OPTIONS.filter(function(o){return o.id===selectedDiag;})[0];
+    applyIncrementalAdjust(opt.delta);
+    toast('Configuración mejorada — calibración #'+pad2(calibrationIteration+1));
+  });
+  var FEEDBACK_OPTIONS = [
+    {id:'perfect', label:'🟢 Perfecta', delta:{}},
+    {id:'almost', label:'🟡 Casi perfecta', delta:{estab:2,ctrl:2}},
+    {id:'slow', label:'🔵 Muy lenta', delta:{vel:9,general:4}},
+    {id:'fast', label:'🔴 Muy rápida', delta:{vel:-9,general:-4}},
+    {id:'shaky', label:'🟠 Tiembla', delta:{estab:12,vel:-7,button:3}},
+    {id:'past', label:'🟣 Se pasa', delta:{general:-6,estab:6,button:2}},
+    {id:'short', label:'⚪ Se queda corta', delta:{general:5,vel:4}}
+  ];
+  function renderFeedbackRow(){
+    var row = document.getElementById('feedbackRow');
+    row.innerHTML = FEEDBACK_OPTIONS.map(function(o){ return '<button class="feedback-chip" data-id="'+o.id+'">'+o.label+'</button>'; }).join('');
+    Array.prototype.slice.call(row.querySelectorAll('.feedback-chip')).forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var opt = FEEDBACK_OPTIONS.filter(function(o){return o.id===btn.getAttribute('data-id');})[0];
+        applyIncrementalAdjust(opt.delta);
+        toast('Gracias — se ajustó la calibración #'+pad2(calibrationIteration+1));
+      });
+    });
+  }
+  function applyIncrementalAdjust(delta){
+    ['estab','vel','agr','ctrl','drag','general','button'].forEach(function(k){
+      if(delta[k]!==undefined){ feedbackAdjust[k] = (feedbackAdjust[k]||0) + delta[k]; }
+    });
+    feedbackAdjust.estab = clamp(feedbackAdjust.estab,-40,40);
+    feedbackAdjust.vel = clamp(feedbackAdjust.vel,-40,40);
+    feedbackAdjust.agr = clamp(feedbackAdjust.agr,-40,40);
+    feedbackAdjust.ctrl = clamp(feedbackAdjust.ctrl,-40,40);
+    feedbackAdjust.drag = clamp(feedbackAdjust.drag,-60,60);
+    feedbackAdjust.general = clamp(feedbackAdjust.general,-25,25);
+    feedbackAdjust.button = clamp(feedbackAdjust.button,-8,8);
+    lsSet('vss_feedback_adjust', feedbackAdjust);
+    calibrationIteration++;
+    startCalibration();
+  }
+
+  /* ============================================================
+     iOS RENDER HELPERS (reflejan el control real de iOS, no un slider genérico)
+     ============================================================ */
+  function iosRowSet(name, valueLabel, on){
+    return '<div class="ios-row"><div class="ios-top"><span class="ios-name">'+name+'</span>'+
+      '<span class="ios-badge'+(on?' on':'')+'">'+valueLabel+'</span></div></div>';
+  }
+  function iosSlider(name, value, min, max, step, unit, note, extra){
+    var id = 'sl_'+Math.random().toString(36).slice(2,9);
+    return '<div class="ios-row"><div class="ios-top"><span class="ios-name">'+name+'</span>'+
+      '<span class="ios-badge on">'+value+unit+'</span></div>'+
+      (note?'<div class="ios-val">'+note+'</div>':'')+
+      '<div class="ref-slider-wrap"><input id="'+id+'" class="ref-slider" type="range" tabindex="-1" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" disabled>'+
+      '<div class="ref-slider-labels"><span>'+min+unit+'</span><span>'+max+unit+'</span></div></div>'+
+      '<div class="ref-slider-pos">Pon la barrita en Ajustes al <b>'+round(((value-min)/(max-min))*100)+'% de su recorrido</b> hasta que marque <b>'+value+unit+'</b>.</div>'+
+      (extra?'<div class="ios-na" style="margin-top:5px;">'+extra+'</div>':'')+'</div>';
+  }
+  function iosSteppedSlider(name, labels, idx, note, extra){
+    var id = 'sl_'+Math.random().toString(36).slice(2,9);
+    return '<div class="ios-row"><div class="ios-top"><span class="ios-name">'+name+'</span>'+
+      '<span class="ios-badge on">'+labels[idx]+'</span></div>'+(note?'<div class="ios-val">'+note+'</div>':'')+
+      '<div class="ref-slider-wrap"><input id="'+id+'" class="ref-slider" type="range" tabindex="-1" min="0" max="'+(labels.length-1)+'" step="1" value="'+idx+'" disabled>'+
+      '<div class="ref-slider-labels">'+labels.map(function(l){return '<span>'+l+'</span>';}).join('')+'</div></div>'+
+      '<div class="ref-slider-pos">Posición <b>'+(idx+1)+' de '+labels.length+'</b>: <b>'+labels[idx]+'</b>.</div>'+
+      (extra?'<div class="ios-na" style="margin-top:5px;">'+extra+'</div>':'')+'</div>';
+  }
+  function iosStepper(name, value, unit, note, extra){
+    unit = unit||'';
+    return '<div class="ios-row"><div class="ios-top"><span class="ios-name">'+name+'</span>'+
+      '<div class="stepper-visual"><span class="stepper-btn">–</span><span class="stepper-val">'+value+unit+'</span><span class="stepper-btn">+</span></div></div>'+
+      (note?'<div class="ios-val">'+note+'</div>':'')+(extra?'<div class="ios-na" style="margin-top:4px;">'+extra+'</div>':'')+'</div>';
+  }
+  function iosOptionList(name, labels, idx, note, extra){
+    var rows = labels.map(function(l,i){ return '<div class="ios-opt-row'+(i===idx?' sel':'')+'"><span>'+l+'</span>'+(i===idx?'<span class="ios-opt-check">✓</span>':'')+'</div>'; }).join('');
+    return '<div class="ios-row"><div class="ios-top"><span class="ios-name">'+name+'</span>'+
+      '<span class="ios-badge on">'+labels[idx]+'</span></div>'+(note?'<div class="ios-val">'+note+'</div>':'')+
+      '<div class="ios-opt-list">'+rows+'</div>'+
+      '<div class="ref-slider-pos">Toca esta fila y elige <b>'+labels[idx]+'</b>.</div>'+
+      (extra?'<div class="ios-na" style="margin-top:5px;">'+extra+'</div>':'')+'</div>';
+  }
+
+  /* ============================================================
+     RENDERING
+     ============================================================ */
+  function setRing(pct){
+    var circ = 251.2, offset = circ - (circ*pct/100);
+    document.getElementById('confCircle').style.strokeDashoffset = offset;
+    document.getElementById('confPct').textContent = pct+'%';
+  }
+
+  function ffExplain(key, val, ratios, profile){
+    switch(key){
+      case 'general': return 'Valor base de la curva: equilibra velocidad de arrastre y estabilidad según tu perfil (estabilidad '+profile.estab+', velocidad '+profile.vel+').';
+      case 'redDot': return 'Se deriva de General × '+ratios.redDot.toFixed(2)+' — baja poco porque la mira de punto rojo no amplía la imagen.';
+      case 'scope2x': return 'General × '+ratios.scope2x.toFixed(2)+' — se reduce más cuanto mayor es tu Estabilidad y Control, para no perder el objetivo al hacer zoom.';
+      case 'scope4x': return 'General × '+ratios.scope4x.toFixed(2)+' — reducción mayor que 2X: a más aumento, menos margen de error tolera un movimiento brusco.';
+      case 'sniper': return 'General × '+ratios.sniper.toFixed(2)+' — el valor más bajo de la curva; con Control alto se prioriza precisión sobre velocidad de giro.';
+      case 'freeLook': return 'General × '+ratios.freeLook.toFixed(2)+' — sube con tu Velocidad porque solo mueve cámara, no depende de acertar un disparo.';
+    }
+    return '';
+  }
+
+  function renderResults(r){
+    var d = r.detected, match = r.match, conf = r.confidence;
+    var isFamily = match.ties > 1;
+    var statusEl = document.getElementById('deviceStatus');
+    var deviceLabel;
+    if(!d.isIOS){
+      deviceLabel = 'Dispositivo no identificado como iPhone';
+      statusEl.textContent = 'DESCONOCIDO'; statusEl.className='device-status';
+    } else if(match.matchScore>=3 && !isFamily){
+      deviceLabel = match.device.name;
+      statusEl.textContent = 'IDENTIFICADO'; statusEl.className='device-status identified';
+    } else if(match.matchScore>=2){
+      deviceLabel = isFamily ? 'Familia de dispositivos compatible: '+match.device.name : (match.device ? match.device.name+' (estimado)' : 'iPhone — modelo estimado');
+      statusEl.textContent = 'ESTIMADO'; statusEl.className='device-status estimated';
+    } else {
+      deviceLabel = 'iPhone — modelo no identificable con estos datos';
+      statusEl.textContent = 'DESCONOCIDO'; statusEl.className='device-status';
+    }
+    document.getElementById('deviceName').textContent = deviceLabel;
+    document.getElementById('deviceMeta').innerHTML =
+      d.screenW+'×'+d.screenH+' pt · DPR '+d.dpr+' · '+(d.refreshRate!==null ? d.refreshRate+'Hz estimado' : 'frecuencia no disponible')+'<br>'+
+      'Viewport '+d.vvW+'×'+d.vvH+' · Touch pts: '+d.maxTouchPoints+' · '+d.orientation;
+    setRing(conf.pct);
+    document.getElementById('profileChip').textContent = 'CALIBRACIÓN #'+pad2(r.iteration+1)+' · '+PRESETS.filter(function(p){return p.id===r.presetId;})[0].name.toUpperCase();
+
+    // ---- Free Fire ----
+    var ffHtml = '';
+    Object.keys(FF_LABELS).forEach(function(key){
+      var def = FF_LABELS[key], val = r.freeFire.values[key];
+      ffHtml += '<div class="stat-block"><div class="stat-row" style="border-bottom:none; padding-bottom:2px;">'+
+        '<div class="stat-left"><span class="stat-name">'+def.label+'</span><span class="stat-hint">'+def.hint+'</span></div>'+
+        '<div class="stat-right"><span class="stat-value">'+val+'</span><button class="copy-btn" data-copy="'+val+'" title="Copiar">⧉</button></div></div>'+
+        '<div class="stat-explain">'+ffExplain(key, val, r.freeFire.ratios, r.profile)+'</div></div>';
+    });
+    document.getElementById('ffList').innerHTML = ffHtml;
+    Array.prototype.slice.call(document.getElementById('ffList').querySelectorAll('.copy-btn')).forEach(function(btn){
+      btn.addEventListener('click', function(){ copyText(btn.getAttribute('data-copy'), btn); });
+    });
+
+    // ---- Botón de disparo ----
+    var b = r.button;
+    var fbPx = round(38 + (b.size-40)*1.1);
+    document.getElementById('fireButtonBox').innerHTML =
+      '<div class="fire-btn-box"><div class="fire-btn-visual"><div class="ring"></div><div class="dot" style="width:'+fbPx+'px;height:'+fbPx+'px;"></div></div>'+
+      '<div class="fire-btn-info"><b>'+b.size+' / 100</b><span>Tamaño recomendado en la escala del HUD de Free Fire.</span>'+
+      '<div class="fire-btn-range">Rango aceptable: '+b.min+'–'+b.max+' · Mínimo '+b.min+' · Máximo '+b.max+'</div></div></div>';
+    var speedPull = round((r.profile.vel*0.5+r.profile.agr*0.5));
+    var stabPull = round((r.profile.estab*0.5+r.profile.ctrl*0.5));
+    document.getElementById('fireButtonWhy').innerHTML =
+      '<b style="color:var(--ink);">Con esta sensibilidad recomendamos este tamaño porque:</b> tu perfil pesa velocidad/agresividad en '+speedPull+'/100 (empuja el botón hacia abajo) y estabilidad/control en '+stabPull+'/100 (empuja hacia arriba). '+
+      (r.profile.drag<-15?'Tu estilo de drag corto favorece un botón algo más ajustado y cercano al borde. ':(r.profile.drag>15?'Tu estilo de drag largo pide algo más de margen de arrastre antes de llegar al borde de pantalla. ':''))+
+      'El rango '+b.min+'–'+b.max+' es más estrecho cuanto más extremo es tu perfil, y más amplio cuando tu perfil es equilibrado.';
+    var hud = document.getElementById('hudMock');
+    var zoneW = clamp(30 + (100-r.profile.estab)*0.25, 26, 55);
+    hud.innerHTML = '<div class="hud-zone" style="right:6%; bottom:8%; width:'+zoneW+'%; height:64%;"></div>'+
+      '<div class="hud-fire" style="width:'+fbPx+'px;height:'+fbPx+'px; right:12%; bottom:14%;"></div>'+
+      '<div class="hud-label" style="left:8px; top:8px;">ZONA DE ARRASTRE (referencia)</div>';
+
+    // ---- iOS ----
+    var ios = r.ios;
+    document.getElementById('touchMainList').innerHTML =
+      iosRowSet('Alcance', 'DESACTIVAR', false) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Evita que un deslizamiento accidental hacia abajo achique la pantalla en pleno combate.</div>' +
+      iosRowSet('Agitar para deshacer', 'DESACTIVAR', false) +
+      '<div class="ios-na" style="margin:-4px 0 0;">Evita que un movimiento brusco del teléfono abra el menú "Deshacer".</div>';
+
+    document.getElementById('hapticList').innerHTML =
+      iosOptionList('Duración requerida', ['Breve','Predeterminada','Larga'], 0,
+        'Lista de 3 opciones con marca ✓, no una barra ni un interruptor.',
+        'Breve añade el menor retraso antes de reconocer una presión.');
+
+    document.getElementById('accomList').innerHTML =
+      iosRowSet('Adaptaciones táctiles', 'DESACTIVAR (por defecto)', false) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Actívalo solo si notas toques dobles o fantasma. Con ella activa, usa:</div>' +
+      iosStepper('Duración de presión', ios.holdDuration.toFixed(2), ' s',
+        'Tiempo que debes mantener el dedo antes de que se reconozca la presión.',
+        'Es un contador "− n +", no una barra deslizante.') +
+      iosRowSet('Gestos de deslizamiento', 'ACTIVAR', true) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Necesario para que arrastrar (mover cámara) se siga reconociendo con Adaptaciones táctiles activo.</div>' +
+      iosSteppedSlider('Movimiento requerido', SWIPE_LABELS, ios.swipeStepIdx,
+        'Cuánta distancia debe recorrer el dedo antes de reconocerse como deslizamiento.') +
+      iosSlider('Ignorar repetición', ios.ignoreRepeat.toFixed(2), 0.15, 0.60, 0.01, ' s',
+        'Toques repetidos dentro de este intervalo se cuentan como uno solo.') +
+      iosOptionList('Ayuda táctil', ['No','Usar la ubicación del toque inicial','Usar la ubicación del toque final'], 1,
+        'Lista de 3 filas con ✓.', 'Registra el gesto donde pusiste el dedo primero.') +
+      iosSlider('Espera del gesto de ayuda táctil', ios.gestureWait.toFixed(2), 0.05, 0.30, 0.01, ' s', 'Solo aplica si activas "Ayuda táctil".');
+
+    document.getElementById('atList').innerHTML =
+      iosRowSet('AssistiveTouch', 'DESACTIVAR (por defecto)', false) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">El botón flotante puede obstruir la pantalla y causar toques accidentales. Actívalo solo por accesibilidad.</div>' +
+      iosSlider('Opacidad de inactividad', ios.idleOpacity, 10, 45, 1, ' %', 'Mientras menor, menos estorba el ícono.') +
+      iosRowSet('Mostrar menú siempre', 'DESACTIVAR', false) +
+      iosRowSet('Realizar gestos táctiles', 'ACTIVAR', true) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Esta y la siguiente barrita pertenecen a "Dispositivos apuntadores", dentro de AssistiveTouch.</div>' +
+      iosSlider('Sensibilidad del seguimiento', ios.trackingSpeed, 5, 100, 1, ' %',
+        'Ruta: Tocar → AssistiveTouch → Dispositivos apuntadores → Sensibilidad del seguimiento.',
+        d.hasFinePointer ? 'Se detectó un puntero fino conectado ahora: te afecta directamente.' : 'Ahora mismo no hay mouse/trackpad conectado: este valor queda calculado por si conectas uno más adelante, pero no cambia nada en tu partida hoy.') +
+      iosRowSet('Teclas del mouse', 'ACTIVAR', true) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Mueve el puntero con las flechas de un teclado conectado — no requiere mouse físico.</div>' +
+      iosSlider('Demora inicial', ios.mouseInitialDelay.toFixed(2), 0.00, 3.00, 0.05, ' s', 'Cuánto tarda el puntero en empezar a moverse.') +
+      iosSlider('Velocidad máxima', ios.mouseMaxSpeed, 10, 100, 1, ' %', 'Velocidad máxima con la flecha mantenida.') +
+      iosRowSet('Control de permanencia', 'DESACTIVAR', false) +
+      iosSlider('Tolerancia al movimiento', ios.movementTolerance, 2, 18, 1, ' pt', 'Solo aplica si activas Control de permanencia.') +
+      iosRowSet('Gestos en el borde de la pantalla', 'DESACTIVAR', false) +
+      '<div class="ios-na" style="margin:-4px 0 0;">Evita que tu dedo dispare el Centro de control al deslizar cerca del borde durante la partida.</div>';
+
+    document.getElementById('switchList').innerHTML =
+      iosRowSet('Control por botón', 'DESACTIVAR (recomendado)', false) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Es un método de entrada alternativo para interruptores físicos o exploración asistida, no para jugar directo con los dedos: sustituye el toque inmediato por un cursor de exploración y añade retardo. Déjalo <b style="color:var(--ink);">DESACTIVADO</b> para jugar.</div>' +
+      '<div class="ios-val" style="margin:0 0 4px;">Si aun así quieres probarlo, estos son los valores calculados:</div>' +
+      iosSlider('Exploración automática', ios.scanDuration.toFixed(2), 0.30, 3.00, 0.05, ' s', 'Velocidad con la que el cursor pasa de un elemento a otro.') +
+      iosStepper('Ciclos', ios.loops, '', 'Veces que se recorre la pantalla antes de ocultarse.') +
+      iosRowSet('Modo de control por botón', 'Cursor deslizante', true) +
+      iosOptionList('Modo de selección', CURSOR_LABELS, ios.cursorStyleIdx, 'Lista con marca ✓, no una barra.') +
+      iosStepper('Velocidad del cursor deslizante', ios.cursorAmount, '', 'Contador "− n +", 0–120.');
+
+    document.getElementById('displayList').innerHTML =
+      iosRowSet('Texto más grande', 'DESACTIVAR (predeterminado)', false) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">No afecta la sensibilidad ni el HUD del juego.</div>' +
+      iosRowSet('Negritas', 'DESACTIVAR', false) + iosRowSet('Mostrar bordes', 'DESACTIVAR', false) +
+      iosRowSet('Reducir transparencia', 'DESACTIVAR', false) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Solo actívala si notas tirones al abrir menús del sistema; no toca el juego en sí.</div>' +
+      iosRowSet('Aumentar el contraste', 'DESACTIVAR', false) + iosRowSet('Diferenciar sin color', 'DESACTIVAR', false) +
+      iosRowSet('Preferir texto en horizontal', 'DESACTIVAR', false) + iosRowSet('Invertir (clásico)', 'DESACTIVAR', false) +
+      iosRowSet('Reducir efectos de brillo', 'DESACTIVAR', false) + iosRowSet('Atenuar luces parpadeantes', 'DESACTIVAR', false) +
+      iosRowSet('Reducir el punto blanco', 'DESACTIVAR', false) +
+      '<div class="ios-na" style="margin:0;">Ninguno de estos cambia la sensibilidad táctil: son puramente visuales.</div>';
+
+    document.getElementById('motionList').innerHTML =
+      iosRowSet('Reducir movimiento', 'DESACTIVAR', false) +
+      '<div class="ios-na" style="margin:-4px 0 8px;">Solo apaga el paralaje de íconos del sistema; no afecta los FPS dentro de Free Fire.</div>' +
+      iosRowSet('Reproducir animación/video automáticamente', 'Sin impacto en el juego', false) +
+      iosRowSet('Limitar velocidad de fotogramas', 'DESACTIVAR (crítico)', false) +
+      '<div class="ios-na" style="margin:-4px 0 0;">Si tu iPhone tiene pantalla ProMotion (120Hz), esta opción la fuerza a 60fps en todo el sistema, Free Fire incluido. Debe quedar <b style="color:var(--ink);">DESACTIVADO</b>.</div>';
+
+    repaintAllRefSliders(document);
+    renderExpert(r);
+    renderHistoryList();
+    refreshProfileSelectors();
+  }
+
+  /* ============================================================
+     EXPERT MODE
+     ============================================================ */
+  var expertOn = lsGet('vss_expert', false);
+  function setExpertUI(){
+    var sw = document.getElementById('expertSwitch');
+    sw.classList.toggle('on', expertOn);
+    sw.setAttribute('aria-checked', expertOn ? 'true':'false');
+    document.getElementById('expertSection').style.display = expertOn ? 'block':'none';
+  }
+  document.getElementById('expertSwitch').addEventListener('click', function(){ expertOn=!expertOn; lsSet('vss_expert', expertOn); setExpertUI(); });
+  document.getElementById('expertSwitch').addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); expertOn=!expertOn; lsSet('vss_expert', expertOn); setExpertUI(); } });
+
+  function kv(label, val){ return '<div class="kv"><b>'+label+'</b><span'+(val==='NO DISPONIBLE'?' class="na"':'')+'>'+val+'</span></div>'; }
+  function renderExpert(r){
+    var d = r.detected;
+    document.getElementById('expertDetect').innerHTML =
+      kv('screen.width×height', d.screenW+'×'+d.screenH) +
+      kv('innerWidth×innerHeight', d.innerW+'×'+d.innerH) +
+      kv('visualViewport', d.vvW+'×'+d.vvH) +
+      kv('devicePixelRatio', d.dpr) +
+      kv('orientation', d.orientation) +
+      kv('maxTouchPoints', d.maxTouchPoints) +
+      kv('refresh (rAF, estimado)', d.refreshRate!==null ? d.refreshRate+' Hz' : 'NO DISPONIBLE') +
+      kv('platform', d.platform || 'NO DISPONIBLE') +
+      kv('standalone (Web Clip)', d.standalone || d.displayModeStandalone ? 'sí' : 'no') +
+      kv('pointer:fine (mouse/trackpad)', d.hasFinePointer ? 'sí' : 'no') +
+      kv('coincidencia dispositivo', r.match.matchScore+'/3'+(r.match.ties>1?' ('+r.match.ties+' familias empatadas)':'')) +
+      kv('calidad física del panel táctil', 'NO DISPONIBLE — Safari no lo expone');
+
+    document.getElementById('expertParams').innerHTML =
+      kv('deviceScore', r.deviceScore.toFixed(3)) +
+      kv('unitVar (huella de esta pantalla)', r.unitVar.toFixed(3)) +
+      kv('recalNorm (variación de recalibrar)', r.recalNorm.toFixed(2)) +
+      kv('intensity (General normalizado)', r.freeFire.intensity.toFixed(3)) +
+      kv('preset activo', r.presetId) +
+      kv('estabilidad / velocidad', r.profile.estab+' / '+r.profile.vel) +
+      kv('agresividad / control', r.profile.agr+' / '+r.profile.ctrl) +
+      kv('drag corto↔largo', r.profile.drag) +
+      kv('ajuste acumulado (feedback)', JSON.stringify(feedbackAdjust));
+
+    document.getElementById('expertConfidence').innerHTML =
+      r.confidence.parts.map(function(p){ return '<div>'+p[0]+': <b style="color:var(--ink);">'+p[1]+'</b></div>'; }).join('') +
+      '<div style="margin-top:6px;">Total (acotado 30–97): <b style="color:var(--ink);">'+r.confidence.pct+'%</b></div>';
+
+    var diffEl = document.getElementById('expertDiff');
+    if(!prevResult){ diffEl.innerHTML = '<div class="empty-state">Esta es tu primera calibración en esta sesión — no hay una anterior con la que comparar.</div>'; }
+    else{
+      function diffRow(label, a, b){
+        var d1 = b - a; var cls = d1>0?'diff-pos':(d1<0?'diff-neg':'diff-zero');
+        return kv(label, a+' → '+b+' <span class="'+cls+'">('+(d1>0?'+':'')+d1+')</span>');
+      }
+      var html = '';
+      Object.keys(FF_LABELS).forEach(function(k){ html += diffRow(FF_LABELS[k].label, prevResult.freeFire.values[k], r.freeFire.values[k]); });
+      html += diffRow('Botón de disparo', prevResult.button.size, r.button.size);
+      diffEl.innerHTML = '<div class="kv-grid">'+html+'</div>';
+    }
+  }
+
+  /* ============================================================
+     HISTORY (localStorage, capado a 20 entradas)
+     ============================================================ */
+  var HISTORY_MAX = 20;
+  function pushHistory(r){
+    var hist = lsGet('vss_history', []);
+    hist.unshift({
+      id: 'h'+Date.now(), ts: r.ts, iteration: r.iteration, presetId: r.presetId,
+      general: r.freeFire.values.general, redDot: r.freeFire.values.redDot,
+      scope2x: r.freeFire.values.scope2x, scope4x: r.freeFire.values.scope4x,
+      sniper: r.freeFire.values.sniper, freeLook: r.freeFire.values.freeLook,
+      button: r.button.size, deviceLabel: (r.match.device ? r.match.device.name : 'iPhone'),
+      feedback: null
+    });
+    if(hist.length > HISTORY_MAX) hist = hist.slice(0, HISTORY_MAX);
+    lsSet('vss_history', hist);
+  }
+  function fmtDate(ts){
+    try{ var dt = new Date(ts); return dt.toLocaleDateString('es', {day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; }
+  }
+  function renderHistoryList(){
+    var hist = lsGet('vss_history', []);
+    var el = document.getElementById('historyList');
+    if(!hist.length){ el.innerHTML = '<div class="empty-state">Aún no hay calibraciones guardadas en el historial.</div>'; return; }
+    el.innerHTML = hist.map(function(h,i){
+      return '<div class="list-item"><div class="list-item-main">'+
+        '<b>#'+pad2(hist.length-i)+' · '+fmtDate(h.ts)+'</b>'+
+        '<span>'+PRESETS.filter(function(p){return p.id===h.presetId;})[0].name+' · Gen '+h.general+' · Botón '+h.button+'</span></div>'+
+        '</div>';
+    }).join('');
+  }
+
+  /* ============================================================
+     SAVED PROFILES (CRUD)
+     ============================================================ */
+  function getProfiles(){ return lsGet('vss_profiles', []); }
+  function setProfiles(list){ lsSet('vss_profiles', list); }
+  function snapshotCurrent(){
+    if(!lastResult) return null;
+    return {
+      presetId: activePresetId,
+      customVals: JSON.parse(JSON.stringify(customVals)),
+      feedbackAdjust: JSON.parse(JSON.stringify(feedbackAdjust)),
+      results: {
+        general: lastResult.freeFire.values.general, redDot: lastResult.freeFire.values.redDot,
+        scope2x: lastResult.freeFire.values.scope2x, scope4x: lastResult.freeFire.values.scope4x,
+        sniper: lastResult.freeFire.values.sniper, freeLook: lastResult.freeFire.values.freeLook,
+        button: lastResult.button.size
+      }
+    };
+  }
+  document.getElementById('saveProfileBtn').addEventListener('click', function(){
+    var input = document.getElementById('saveNameInput');
+    var name = input.value.trim();
+    if(!name){ toast('Escribe un nombre para el perfil'); return; }
+    var snap = snapshotCurrent();
+    if(!snap){ toast('Calibra primero'); return; }
+    var list = getProfiles();
+    list.unshift({id:'p'+Date.now(), name:name, createdAt:Date.now(), data:snap});
+    setProfiles(list);
+    input.value = '';
+    renderProfilesList();
+    refreshProfileSelectors();
+    toast('Perfil guardado');
+  });
+  function renderProfilesList(){
+    var list = getProfiles();
+    var el = document.getElementById('profilesList');
+    if(!list.length){ el.innerHTML = '<div class="empty-state">Sin perfiles guardados todavía.</div>'; return; }
+    el.innerHTML = list.map(function(p){
+      return '<div class="list-item"><div class="list-item-main"><b>'+p.name+'</b>'+
+        '<span>General '+p.data.results.general+' · Botón '+p.data.results.button+' · '+PRESETS.filter(function(x){return x.id===p.data.presetId;})[0].name+'</span></div>'+
+        '<div class="list-item-actions">'+
+        '<button class="icon-btn" data-act="use" data-id="'+p.id+'" title="Usar">▶</button>'+
+        '<button class="icon-btn" data-act="rename" data-id="'+p.id+'" title="Renombrar">✎</button>'+
+        '<button class="icon-btn" data-act="dup" data-id="'+p.id+'" title="Duplicar">⧉</button>'+
+        '<button class="icon-btn" data-act="del" data-id="'+p.id+'" title="Eliminar">✕</button>'+
+        '</div></div>';
+    }).join('');
+    Array.prototype.slice.call(el.querySelectorAll('.icon-btn')).forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var act = btn.getAttribute('data-act'), id = btn.getAttribute('data-id');
+        var list2 = getProfiles();
+        var idx = list2.findIndex(function(p){return p.id===id;});
+        if(idx===-1) return;
+        if(act==='use'){
+          activePresetId = list2[idx].data.presetId;
+          customVals = JSON.parse(JSON.stringify(list2[idx].data.customVals));
+          feedbackAdjust = JSON.parse(JSON.stringify(list2[idx].data.feedbackAdjust));
+          lsSet('vss_preset', activePresetId); lsSet('vss_custom', customVals); lsSet('vss_feedback_adjust', feedbackAdjust);
+          renderPresetGrid(); bindCustomSliders();
+          calibrationIteration++; startCalibration();
+          toast('Perfil "'+list2[idx].name+'" cargado');
+        } else if(act==='rename'){
+          var nn = prompt('Nuevo nombre:', list2[idx].name);
+          if(nn && nn.trim()){ list2[idx].name = nn.trim(); setProfiles(list2); renderProfilesList(); refreshProfileSelectors(); }
+        } else if(act==='dup'){
+          var copy = JSON.parse(JSON.stringify(list2[idx]));
+          copy.id = 'p'+Date.now(); copy.name = list2[idx].name+' (copia)'; copy.createdAt = Date.now();
+          list2.unshift(copy); setProfiles(list2); renderProfilesList(); refreshProfileSelectors();
+        } else if(act==='del'){
+          if(confirm('¿Eliminar el perfil "'+list2[idx].name+'"? Esta acción no se puede deshacer.')){
+            list2.splice(idx,1); setProfiles(list2); renderProfilesList(); refreshProfileSelectors();
+          }
+        }
+      });
+    });
+  }
+
+  /* ============================================================
+     COMPARE
+     ============================================================ */
+  function refreshProfileSelectors(){
+    var list = getProfiles();
+    var opts = '<option value="">— Selecciona un perfil guardado —</option>' +
+      list.map(function(p){ return '<option value="'+p.id+'">'+p.name+'</option>'; }).join('');
+    ['compareA','compareB'].forEach(function(id){
+      var sel = document.getElementById(id);
+      var prev = sel.value;
+      sel.innerHTML = opts;
+      if(list.some(function(p){return p.id===prev;})) sel.value = prev;
+    });
+    renderCompare();
+  }
+  function renderCompare(){
+    var a = document.getElementById('compareA').value, b = document.getElementById('compareB').value;
+    var out = document.getElementById('compareOut');
+    if(!a || !b){ out.innerHTML = '<div class="empty-state">Elige dos perfiles guardados para compararlos.</div>'; return; }
+    var list = getProfiles();
+    var pa = list.filter(function(p){return p.id===a;})[0], pb = list.filter(function(p){return p.id===b;})[0];
+    if(!pa || !pb){ out.innerHTML=''; return; }
+    var rows = [
+      ['General', pa.data.results.general, pb.data.results.general],
+      ['Punto rojo', pa.data.results.redDot, pb.data.results.redDot],
+      ['2X', pa.data.results.scope2x, pb.data.results.scope2x],
+      ['4X', pa.data.results.scope4x, pb.data.results.scope4x],
+      ['Francotirador', pa.data.results.sniper, pb.data.results.sniper],
+      ['Vista libre', pa.data.results.freeLook, pb.data.results.freeLook],
+      ['Botón de disparo', pa.data.results.button, pb.data.results.button],
+      ['Perfil', PRESETS.filter(function(p){return p.id===pa.data.presetId;})[0].name, PRESETS.filter(function(p){return p.id===pb.data.presetId;})[0].name],
+      ['Estabilidad', (pa.data.presetId==='personalizado'?pa.data.customVals.estab:PRESETS.filter(function(p){return p.id===pa.data.presetId;})[0].vals.estab), (pb.data.presetId==='personalizado'?pb.data.customVals.estab:PRESETS.filter(function(p){return p.id===pb.data.presetId;})[0].vals.estab)],
+      ['Agresividad', (pa.data.presetId==='personalizado'?pa.data.customVals.agr:PRESETS.filter(function(p){return p.id===pa.data.presetId;})[0].vals.agr), (pb.data.presetId==='personalizado'?pb.data.customVals.agr:PRESETS.filter(function(p){return p.id===pb.data.presetId;})[0].vals.agr)]
+    ];
+    out.innerHTML = '<table class="compare-table"><thead><tr><th></th><th>'+pa.name+'</th><th>'+pb.name+'</th></tr></thead><tbody>'+
+      rows.map(function(r){ return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'; }).join('')+
+      '</tbody></table>';
+  }
+  document.getElementById('compareA').addEventListener('change', renderCompare);
+  document.getElementById('compareB').addEventListener('change', renderCompare);
+
+  /* ============================================================
+     COPY / EXPORT / IMPORT
+     ============================================================ */
+  document.getElementById('copyAllBtn').addEventListener('click', function(){
+    if(!lastResult){ return; }
+    var ff = lastResult.freeFire.values, ios = lastResult.ios, b = lastResult.button;
+    var lines = [];
+    lines.push('VOID SATAN SENSI — Calibración #'+pad2(lastResult.iteration+1)+' · Perfil: '+PRESETS.filter(function(p){return p.id===lastResult.presetId;})[0].name);
+    lines.push('');
+    lines.push('FREE FIRE (Configuración → Sensibilidad)');
+    lines.push('General: '+ff.general); lines.push('Punto rojo: '+ff.redDot); lines.push('2X: '+ff.scope2x);
+    lines.push('4X: '+ff.scope4x); lines.push('Francotirador (AWM): '+ff.sniper); lines.push('Vista libre: '+ff.freeLook);
+    lines.push(''); lines.push('BOTÓN DE DISPARO (HUD): '+b.size+' (rango '+b.min+'–'+b.max+')');
+    lines.push(''); lines.push('iOS — Accesibilidad → Tocar');
+    lines.push('Alcance: Desactivar · Agitar para deshacer: Desactivar · Reacción táctil → Duración: Breve');
+    lines.push('Adaptaciones táctiles (solo si hay toques fantasma): Duración de presión '+ios.holdDuration.toFixed(2)+'s · Ignorar repetición '+ios.ignoreRepeat.toFixed(2)+'s');
+    lines.push('Limitar velocidad de fotogramas: Desactivar (crítico en pantallas ProMotion)');
+    copyText(lines.join('\n'), null);
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    if(!lastResult){ toast('Calibra primero'); return; }
+    var payload = { app:'Void Satan Sensi', version:3, exportedAt: new Date().toISOString(),
+      preset: activePresetId, customVals: customVals, feedbackAdjust: feedbackAdjust,
+      lastResult: { freeFire: lastResult.freeFire.values, button: lastResult.button, ios: lastResult.ios } };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'void-satan-sensi-perfil.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    toast('Perfil exportado');
+  });
+  document.getElementById('importBtn').addEventListener('click', function(){ document.getElementById('importFile').click(); });
+  document.getElementById('importFile').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = JSON.parse(reader.result);
+        if(data.preset) activePresetId = data.preset;
+        if(data.customVals) customVals = data.customVals;
+        if(data.feedbackAdjust) feedbackAdjust = data.feedbackAdjust;
+        lsSet('vss_preset', activePresetId); lsSet('vss_custom', customVals); lsSet('vss_feedback_adjust', feedbackAdjust);
+        renderPresetGrid(); bindCustomSliders();
+        calibrationIteration++; startCalibration();
+        toast('Perfil importado');
+      }catch(err){ toast('El archivo no es un perfil válido'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  var appInited = false;
+  function initAppOnce(){
+    if(appInited) return; appInited = true;
+    renderPresetGrid();
+    bindCustomSliders();
+    renderDiagGrid();
+    renderFeedbackRow();
+    renderProfilesList();
+    refreshProfileSelectors();
+    setExpertUI();
+  }
+
+})();
+</script>
+</body>
+</html>
